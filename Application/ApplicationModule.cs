@@ -1,6 +1,6 @@
-using MediatR;
-using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using Application.Factories;
+using Application.Interfaces;
 
 namespace Application
 {
@@ -8,8 +8,12 @@ namespace Application
     {
         public static void AddApplication(this IServiceCollection services)
         {
+            // Register MediatR services
             services.AddMediatR(cfg =>
                 cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+
+            // Register IUsuarioFactory as a scoped service
+            services.AddScoped<IUsuarioFactory, UsuarioFactory>();
         }
     }
 }

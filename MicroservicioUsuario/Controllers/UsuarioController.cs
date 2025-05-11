@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Application.Commands;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using static Application.Commands.CrearUsuarioCommand;
 
@@ -17,10 +18,10 @@ namespace Web.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateUsuario(CreateUsuarioCommand command)
+        public async Task<IActionResult> CrearUsuario(CrearUsuarioCommand command)
         {
             var usuarioId = await _mediator.Send(command);
-            return CreatedAtAction(nameof(CreateUsuario), new { id = usuarioId });
+            return CreatedAtAction(nameof(CrearUsuario), new { id = usuarioId });
         }
     }
 }

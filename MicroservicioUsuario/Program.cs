@@ -1,6 +1,7 @@
 using Application;
 using Infrastructure;
-using Web;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration.GetConnectionString("Postgres"));
 
 // Configurar MediatR
-builder.Services.AddMediatR(typeof(ApplicationModule).Assembly);
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ApplicationModule).Assembly));
 
 // Configurar controladores
 builder.Services.AddControllers();

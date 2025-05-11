@@ -1,23 +1,32 @@
-﻿using MediatR;
+﻿using Application.Commands;
+using MediatR;
 using Domain.Entities;
 using Application.Interfaces;
-using static Application.Commands.CrearUsuarioCommand;
+using Domain.Events;
 
 
 namespace Application.Handlers;
 
-public class CrearUsuarioCommandHandler : IRequestHandler<CreateUsuarioCommand, Guid>
+public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, Guid>
 {
     private readonly IUsuarioRepository _repository;
+    private readonly IUsuarioFactory _factory;
+    private readonly IEventPublisher _eventPublisher;
 
-    public CrearUsuarioCommandHandler(IUsuarioRepository repository)
+    public CrearUsuarioCommandHandler(
+        IUsuarioRepository repository,
+        IUsuarioFactory factory,
+        IEventPublisher eventPublisher)
     {
         _repository = repository;
+        _factory = factory;
+        _eventPublisher = eventPublisher;
     }
 
-    public async Task<Guid> Handle(CreateUsuarioCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CrearUsuarioCommand request, CancellationToken cancellationToken)
     {
-        var usuario = new Usuario(
+        // Usar Factory para crear el usuario
+        var usuario = _factory.CrearUsuario(
             request.Nombre,
             request.Username,
             request.Password,
@@ -26,6 +35,21 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CreateUsuarioCommand, 
         );
 
         await _repository.AddAsync(usuario);
+
+        // Publicar evento
+        var evento = new UsuarioCreadoEvent(
+            usuario.Id,
+            usuario.Nombre,
+            usuario.Username,
+            usuario.Correo
+        );
+
+        _eventPublisher.Publish(
+            evento,
+            exchangeName: "usuarios_exchange",
+            routingKey: "usuario.creado"
+        );
+
         return usuario.Id;
     }
 }
