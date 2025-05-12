@@ -1,6 +1,7 @@
 using System.Reflection;
 using Application.Factories;
 using Application.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Application
 {

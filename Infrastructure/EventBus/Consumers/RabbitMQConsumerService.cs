@@ -5,6 +5,8 @@ using MongoDB.Driver;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Infrastructure.EventBus.Consumers;
 
