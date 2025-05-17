@@ -1,30 +1,45 @@
 using Application;
 using Infrastructure;
 using Infrastructure.DataBase;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Obtener la conexión a PostgreSQL desde la configuración
-var postgresConnection = builder.Configuration.GetConnectionString("PostgresConnection");
+
+// Configurar servicios
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Microservicio Usuario", Version = "v1" });
+});
 
 // Configurar módulos
+builder.Services.AddAuthorization();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Configurar MediatR
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ApplicationModule).Assembly));
-
-// Configurar controladores
-builder.Services.AddControllers();
-
 var app = builder.Build();
 
+// Middleware pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Usuario API v1");
+    });
+}
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+// Inicialización de MongoDB
 using (var scope = app.Services.CreateScope())
 {
     var mongoInitializer = scope.ServiceProvider.GetRequiredService<MongoInitializer>();
     mongoInitializer.Initialize();
 }
 
-
-app.MapControllers();
 app.Run();

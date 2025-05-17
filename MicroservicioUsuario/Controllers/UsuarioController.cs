@@ -23,5 +23,12 @@ namespace Web.Controllers
             var usuarioId = await _mediator.Send(command);
             return CreatedAtAction(nameof(CrearUsuario), new { id = usuarioId });
         }
+
+        [HttpGet]
+        [Route("ObtenerUsuarios")]
+        public async Task<IActionResult> ObtenerUsuarios()
+        {
+            return Ok();
+        }
     }
 }
