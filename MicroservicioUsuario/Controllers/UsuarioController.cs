@@ -1,4 +1,5 @@
 ﻿using Application.Commands;
+using Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using static Application.Commands.CrearUsuarioCommand;
@@ -23,12 +24,14 @@ namespace Web.Controllers
             var usuarioId = await _mediator.Send(command);
             return CreatedAtAction(nameof(CrearUsuario), new { id = usuarioId });
         }
-
-        [HttpGet]
-        [Route("ObtenerUsuarios")]
-        public async Task<IActionResult> ObtenerUsuarios()
+        [HttpPatch("confirmar")]
+        public async Task<IActionResult> ConfirmarCuenta([FromBody] ConfirmarUsuarioDto dto)
         {
-            return Ok();
+            var command = new ConfirmarUsuarioCommand(dto.Email, dto.Codigo);
+            var result = await _mediator.Send(command);
+
+            return result ? Ok("Cuenta confirmada")
+                : BadRequest("Código inválido o expirado");
         }
     }
 }

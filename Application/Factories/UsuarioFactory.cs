@@ -6,9 +6,9 @@ namespace Application.Factories
 {
     public class UsuarioFactory: IUsuarioFactory
     {
-        public Usuario CrearUsuario(string nombre, string username, string password, string correo, string telefono)
+        public Usuario CrearUsuario(string nombre, string apellido, string username, string password, string correo, string telefono, string direccion)
         {
-            return new Usuario(nombre, username, password, correo, telefono);
+            return new Usuario(nombre, apellido, username, password,correo,telefono,direccion);
         }
     }
 }

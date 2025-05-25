@@ -8,12 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\" />
     <Folder Include="Exceptions\" />
     <Folder Include="Mappers\" />
     <Folder Include="Services\" />
     <Folder Include="Queries\" />
-    <Folder Include="Validators\" />
   </ItemGroup>
 
   <ItemGroup>

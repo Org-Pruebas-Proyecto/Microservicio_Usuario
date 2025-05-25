@@ -1,5 +1,6 @@
 ﻿using Domain.Entities;
 using Application.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories
 {
@@ -16,6 +17,18 @@ namespace Infrastructure.Persistence.Repositories
         {
             await _context.Usuarios.AddAsync(usuario);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Usuario usuario)
+        {
+            _context.Usuarios.Update(usuario);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<Usuario> GetByEmail(string email)
+        {
+            return await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Correo == email);
         }
     }
 }

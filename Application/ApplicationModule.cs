@@ -1,7 +1,8 @@
-using System.Reflection;
 using Application.Factories;
 using Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
+using Application.Services;
 
 namespace Application
 {
@@ -15,6 +16,7 @@ namespace Application
 
             // Register IUsuarioFactory as a scoped service
             services.AddScoped<IUsuarioFactory, UsuarioFactory>();
+            services.AddScoped<ISmtpEmailService, SmtpEmailService>();
         }
     }
 }

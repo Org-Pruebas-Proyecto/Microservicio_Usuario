@@ -76,8 +76,12 @@ public class RabbitMQConsumerService: IHostedService
             {
                 Id = evento.Id,
                 Nombre = evento.Nombre,
+                Apellido = evento.Apellido,
                 Username = evento.Username,
-                Correo = evento.Correo
+                Password = evento.Password,
+                Telefono = evento.Telefono,
+                Correo = evento.Correo,
+                Direccion = evento.Direccion,
             };
 
             await collection.InsertOneAsync(usuarioMongo);
