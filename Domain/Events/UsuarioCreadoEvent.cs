@@ -2,6 +2,7 @@
 {
     public class UsuarioCreadoEvent
     {
+        public string Type => "UsuarioRegistradoEvent"; 
         public Guid Id { get; }
         public string Nombre { get; }
         public string Apellido { get; }

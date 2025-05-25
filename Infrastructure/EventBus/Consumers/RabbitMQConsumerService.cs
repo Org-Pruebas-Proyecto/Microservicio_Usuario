@@ -67,30 +67,63 @@ public class RabbitMQConsumerService: IHostedService
     {
         try
         {
-            var evento = JsonSerializer.Deserialize<UsuarioCreadoEvent>(message);
             var mongoClient = serviceProvider.GetRequiredService<IMongoClient>();
             var database = mongoClient.GetDatabase("usuarios_db");
             var collection = database.GetCollection<UsuarioMongo>("usuarios");
+            // Determinar tipo de evento
+            // Parsear el mensaje para obtener el tipo de evento
+            using JsonDocument doc = JsonDocument.Parse(message);
+            JsonElement root = doc.RootElement;
 
-            var usuarioMongo = new UsuarioMongo
+            if (!root.TryGetProperty("Type", out JsonElement typeElement))
+                throw new InvalidOperationException("Mensaje sin propiedad 'Type'");
+
+            string eventType = typeElement.GetString();
+
+
+            if (eventType == "UsuarioRegistradoEvent")
             {
-                Id = evento.Id,
-                Nombre = evento.Nombre,
-                Apellido = evento.Apellido,
-                Username = evento.Username,
-                Password = evento.Password,
-                Telefono = evento.Telefono,
-                Correo = evento.Correo,
-                Direccion = evento.Direccion,
-            };
+                var evento = JsonSerializer.Deserialize<UsuarioCreadoEvent>(message);
+                var usuarioMongo = new UsuarioMongo
+                {
+                    Id = evento.Id,
+                    Nombre = evento.Nombre,
+                    Apellido = evento.Apellido,
+                    Username = evento.Username,
+                    Password = evento.Password,
+                    Telefono = evento.Telefono,
+                    Correo = evento.Correo,
+                    Direccion = evento.Direccion,
+                };
 
-            await collection.InsertOneAsync(usuarioMongo);
+                await collection.InsertOneAsync(usuarioMongo);
+            }
+            else if (eventType == "UsuarioConfirmadoEvent")
+            {
+                var evento = JsonSerializer.Deserialize<UsuarioConfirmadoEvent>(message);
+                await ActualizarConfirmacionMongo(evento, serviceProvider);
+            }
+
         }
         catch (Exception ex)
         {
             // Implementar logging aquí
             Console.WriteLine($"Error procesando mensaje: {ex.Message}");
         }
+    }
+
+
+    private async Task ActualizarConfirmacionMongo(UsuarioConfirmadoEvent evento, IServiceProvider serviceProvider)
+    {
+        var mongoClient = serviceProvider.GetRequiredService<IMongoClient>();
+        var database = mongoClient.GetDatabase("usuarios_db");
+        var collection = database.GetCollection<UsuarioMongo>("usuarios");
+
+        var filter = Builders<UsuarioMongo>.Filter.Eq(u => u.Id, evento.UsuarioId);
+        var update = Builders<UsuarioMongo>.Update
+            .Set(u => u.Verificado, evento.Confirmado);
+
+        await collection.UpdateOneAsync(filter, update);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

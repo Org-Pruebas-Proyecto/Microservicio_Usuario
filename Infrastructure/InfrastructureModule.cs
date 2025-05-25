@@ -51,9 +51,6 @@ namespace Infrastructure
                 ));
 
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-            services.AddSingleton<MongoConfirmationConsumer>();
-            services.AddHostedService(provider =>
-                provider.GetRequiredService<MongoConfirmationConsumer>());
         }
     }
 }
