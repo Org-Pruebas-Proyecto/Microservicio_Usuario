@@ -88,6 +88,9 @@ public class RabbitMQConsumerService : IHostedService
                 case "UsuarioPasswordCambiadoEvent":
                     await HandleUsuarioPasswordCambiadoEvent(message, collection);
                     break;
+                case "PerfilActualizadoEvent":
+                    await HandlePerfilActualizadoEvent(message, serviceProvider);
+                    break;
                 default:
                     throw new InvalidOperationException($"Tipo de evento desconocido: {eventType}");
             }
@@ -145,6 +148,20 @@ public class RabbitMQConsumerService : IHostedService
         var update = Builders<UsuarioMongo>.Update
             .Set(u => u.Verificado, evento.Confirmado);
 
+        await collection.UpdateOneAsync(filter, update);
+    }
+
+    private async Task HandlePerfilActualizadoEvent(string message, IServiceProvider serviceProvider)
+    {
+        var evento = JsonSerializer.Deserialize<PerfilActualizadoEvent>(message);
+        var collection = GetMongoCollection(serviceProvider);
+        var filter = Builders<UsuarioMongo>.Filter.Eq(u => u.Id, evento.UsuarioId);
+        var update = Builders<UsuarioMongo>.Update
+            .Set(u => u.Nombre, evento.Nombre)
+            .Set(u => u.Apellido, evento.Apellido)
+            .Set(u => u.Correo, evento.Correo)
+            .Set(u => u.Telefono, evento.Telefono)
+            .Set(u => u.Direccion, evento.Direccion);
         await collection.UpdateOneAsync(filter, update);
     }
 

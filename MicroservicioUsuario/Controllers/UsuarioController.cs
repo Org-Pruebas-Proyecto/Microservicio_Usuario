@@ -49,5 +49,20 @@ namespace Web.Controllers
             return result ? Ok("Contraseña cambiada")
                 : BadRequest("Error al cambiar la contraseña");
         }
+        [HttpPut("actualizar-perfil")]
+        public async Task<IActionResult> ActualizarPerfil([FromBody] ActualizarPerfilDto dto)
+        {
+            var command = new ActualizarPerfilCommand(
+                dto.UsuarioId,
+                dto.Nombre,
+                dto.Apellido,
+                dto.Correo,
+                dto.Telefono,
+                dto.Direccion
+            );
+            var result = await _mediator.Send(command);
+            return result ? Ok("Perfil actualizado")
+                : BadRequest("Error al actualizar el perfil");
+        }
     }
 }

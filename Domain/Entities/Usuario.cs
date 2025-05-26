@@ -3,14 +3,14 @@
     public class Usuario
     { 
         public Guid Id { get; private set; }
-        public string Nombre { get; private set; }
+        public string Nombre { get;  set; }
         public string Apellido { get;  set; }
-        public string Username { get; private set; }
+        public string Username { get;  set; }
         public string Password { get; set; }
-        public string Correo { get; private set; }
-        public string Telefono { get; private set; }
-        public string Direccion { get; private set; }
-        public bool Verificado { get; private set; }
+        public string Correo { get;  set; }
+        public string Telefono { get;  set; }
+        public string Direccion { get;  set; }
+        public bool Verificado { get;  set; }
         public string CodigoConfirmacion { get; private set; }
         public DateTime FechaExpiracionCodigo { get; private set; }
 
@@ -44,6 +44,14 @@
 
         }
 
+        public void ActualizarPerfil(string nombre,string apellido,string correo, string telefono, string direccion)
+        {
+            Nombre = nombre;
+            Apellido = apellido;
+            Correo = correo;
+            Telefono = telefono;
+            Direccion = direccion;
+        }
 
     }
 }
