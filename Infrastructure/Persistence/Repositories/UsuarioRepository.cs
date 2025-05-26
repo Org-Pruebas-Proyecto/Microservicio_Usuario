@@ -25,6 +25,11 @@ namespace Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
+
+        public async Task<Usuario> GetByIdAsync(Guid id)
+        {
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
+        }
         public async Task<Usuario> GetByEmail(string email)
         {
             return await _context.Usuarios

@@ -2,7 +2,6 @@
 using Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using static Application.Commands.CrearUsuarioCommand;
 
 
 namespace Web.Controllers
@@ -19,8 +18,17 @@ namespace Web.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CrearUsuario(CrearUsuarioCommand command)
+        public async Task<IActionResult> CrearUsuario([FromBody] RegistroUsuarioDto dto)
         {
+            var command = new CrearUsuarioCommand(
+                dto.Nombre,
+                dto.Apellido,
+                dto.Username,
+                dto.Password,
+                dto.Correo,
+                dto.Telefono,
+                dto.Direccion
+            );
             var usuarioId = await _mediator.Send(command);
             return CreatedAtAction(nameof(CrearUsuario), new { id = usuarioId });
         }
@@ -32,6 +40,14 @@ namespace Web.Controllers
 
             return result ? Ok("Cuenta confirmada")
                 : BadRequest("Código inválido o expirado");
+        }
+        [HttpPatch("cambiar-password")]
+        public async Task<IActionResult> CambiarPassword([FromBody] CambiarPasswordDto dto)
+        {
+            var command = new CambiarPasswordCommand(dto.UsuarioId, dto.PasswordActual, dto.NuevoPassword);
+            var result = await _mediator.Send(command);
+            return result ? Ok("Contraseña cambiada")
+                : BadRequest("Error al cambiar la contraseña");
         }
     }
 }

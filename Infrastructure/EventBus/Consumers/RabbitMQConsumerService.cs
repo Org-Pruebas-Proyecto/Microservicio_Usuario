@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Infrastructure.EventBus.Consumers;
 
-public class RabbitMQConsumerService: IHostedService
+public class RabbitMQConsumerService : IHostedService
 {
     private readonly IConnection _connection;
     private readonly IModel _channel;
@@ -67,11 +67,8 @@ public class RabbitMQConsumerService: IHostedService
     {
         try
         {
-            var mongoClient = serviceProvider.GetRequiredService<IMongoClient>();
-            var database = mongoClient.GetDatabase("usuarios_db");
-            var collection = database.GetCollection<UsuarioMongo>("usuarios");
-            // Determinar tipo de evento
-            // Parsear el mensaje para obtener el tipo de evento
+            var collection = GetMongoCollection(serviceProvider);
+
             using JsonDocument doc = JsonDocument.Parse(message);
             JsonElement root = doc.RootElement;
 
@@ -80,30 +77,20 @@ public class RabbitMQConsumerService: IHostedService
 
             string eventType = typeElement.GetString();
 
-
-            if (eventType == "UsuarioRegistradoEvent")
+            switch (eventType)
             {
-                var evento = JsonSerializer.Deserialize<UsuarioCreadoEvent>(message);
-                var usuarioMongo = new UsuarioMongo
-                {
-                    Id = evento.Id,
-                    Nombre = evento.Nombre,
-                    Apellido = evento.Apellido,
-                    Username = evento.Username,
-                    Password = evento.Password,
-                    Telefono = evento.Telefono,
-                    Correo = evento.Correo,
-                    Direccion = evento.Direccion,
-                };
-
-                await collection.InsertOneAsync(usuarioMongo);
+                case "UsuarioRegistradoEvent":
+                    await HandleUsuarioRegistradoEvent(message, collection);
+                    break;
+                case "UsuarioConfirmadoEvent":
+                    await HandleUsuarioConfirmadoEvent(message, serviceProvider);
+                    break;
+                case "UsuarioPasswordCambiadoEvent":
+                    await HandleUsuarioPasswordCambiadoEvent(message, collection);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Tipo de evento desconocido: {eventType}");
             }
-            else if (eventType == "UsuarioConfirmadoEvent")
-            {
-                var evento = JsonSerializer.Deserialize<UsuarioConfirmadoEvent>(message);
-                await ActualizarConfirmacionMongo(evento, serviceProvider);
-            }
-
         }
         catch (Exception ex)
         {
@@ -112,13 +99,48 @@ public class RabbitMQConsumerService: IHostedService
         }
     }
 
-
-    private async Task ActualizarConfirmacionMongo(UsuarioConfirmadoEvent evento, IServiceProvider serviceProvider)
+    private IMongoCollection<UsuarioMongo> GetMongoCollection(IServiceProvider serviceProvider)
     {
         var mongoClient = serviceProvider.GetRequiredService<IMongoClient>();
         var database = mongoClient.GetDatabase("usuarios_db");
-        var collection = database.GetCollection<UsuarioMongo>("usuarios");
+        return database.GetCollection<UsuarioMongo>("usuarios");
+    }
 
+    private async Task HandleUsuarioRegistradoEvent(string message, IMongoCollection<UsuarioMongo> collection)
+    {
+        var evento = JsonSerializer.Deserialize<UsuarioCreadoEvent>(message);
+        var usuarioMongo = new UsuarioMongo
+        {
+            Id = evento.Id,
+            Nombre = evento.Nombre,
+            Apellido = evento.Apellido,
+            Username = evento.Username,
+            Password = evento.Password,
+            Telefono = evento.Telefono,
+            Correo = evento.Correo,
+            Direccion = evento.Direccion,
+        };
+
+        await collection.InsertOneAsync(usuarioMongo);
+    }
+
+    private async Task HandleUsuarioConfirmadoEvent(string message, IServiceProvider serviceProvider)
+    {
+        var evento = JsonSerializer.Deserialize<UsuarioConfirmadoEvent>(message);
+        await ActualizarConfirmacionMongo(evento, serviceProvider);
+    }
+
+    private async Task HandleUsuarioPasswordCambiadoEvent(string message, IMongoCollection<UsuarioMongo> collection)
+    {
+        var evento = JsonSerializer.Deserialize<UsuarioPasswordCambiadoEvent>(message);
+        var filter = Builders<UsuarioMongo>.Filter.Eq(u => u.Id, evento.UsuarioId);
+        var update = Builders<UsuarioMongo>.Update.Set(u => u.Password, evento.Password);
+        await collection.UpdateOneAsync(filter, update);
+    }
+
+    private async Task ActualizarConfirmacionMongo(UsuarioConfirmadoEvent evento, IServiceProvider serviceProvider)
+    {
+        var collection = GetMongoCollection(serviceProvider);
         var filter = Builders<UsuarioMongo>.Filter.Eq(u => u.Id, evento.UsuarioId);
         var update = Builders<UsuarioMongo>.Update
             .Set(u => u.Verificado, evento.Confirmado);

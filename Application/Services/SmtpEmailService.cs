@@ -18,23 +18,41 @@ public class SmtpEmailService: ISmtpEmailService
 
     public async Task EnviarCorreoConfirmacion(string email, string nombre, string codigo)
     {
+        var cliente = CrearClienteSmtp();
+        var titulo = "Confirmación de cuenta";
+        var cuerpo = $"Hola {nombre}, Tu código de confirmación es: {codigo}";
+        var mensaje = CrearMensaje(cliente.Credentials.GetCredential(cliente.Host, cliente.Port, "").UserName, email, titulo, cuerpo);
+
+        await cliente.SendMailAsync(mensaje);
+    }
+
+    public async Task EnviarNotificacionCambioPassword(string email, string nombre)
+    {
+        var cliente = CrearClienteSmtp();
+        var titulo = "Notificación de cambio de contraseña";
+        var cuerpo = $"Hola {nombre}, Tu contraseña ha sido cambiada exitosamente.";
+        var mensaje = CrearMensaje(cliente.Credentials.GetCredential(cliente.Host, cliente.Port, "").UserName, email, titulo, cuerpo);
+
+        await cliente.SendMailAsync(mensaje);
+    }
+
+    private SmtpClient CrearClienteSmtp()
+    {
         var host = _configuration.GetValue<string>("EmailSettings:Host");
         var port = _configuration.GetValue<int>("EmailSettings:Port");
         var user = _configuration.GetValue<string>("EmailSettings:Username");
         var password = _configuration.GetValue<string>("EmailSettings:Password");
 
-
-        var cliente = new SmtpClient(host, port)
+        return new SmtpClient(host, port)
         {
             EnableSsl = true,
             UseDefaultCredentials = false,
             Credentials = new NetworkCredential(user, password)
         };
+    }
 
-        var titulo = "Confirmación de cuenta";
-        var cuerpo = $"Hola {nombre}, Tu código de confirmación es: {codigo}";
-        var mensaje = new MailMessage(user, email, titulo, cuerpo);
-
-        await cliente.SendMailAsync(mensaje);
+    private MailMessage CrearMensaje(string from, string to, string subject, string body)
+    {
+        return new MailMessage(from, to, subject, body);
     }
 }
