@@ -1,7 +1,9 @@
 ﻿using Application.Commands;
 using Application.DTOs;
+using Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 
 namespace Web.Controllers
@@ -63,6 +65,12 @@ namespace Web.Controllers
             var result = await _mediator.Send(command);
             return result ? Ok("Perfil actualizado")
                 : BadRequest("Error al actualizar el perfil");
+        }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUsuario(Guid id)
+        {
+            var usuario = await _mediator.Send(new GetUsuarioByIdQuery(id));
+            return usuario != null ? Ok(usuario) : NotFound();
         }
     }
 }

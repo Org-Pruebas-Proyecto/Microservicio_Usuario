@@ -1,4 +1,5 @@
 using Application.Interfaces;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
@@ -51,6 +52,13 @@ namespace Infrastructure
                 ));
 
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            services.AddSingleton<IMongoUsuarioRepository<UsuarioMongo>, MongoUsuarioRepository<UsuarioMongo>>(
+                sp => new MongoUsuarioRepository<UsuarioMongo>(
+                    sp.GetRequiredService<IMongoClient>(),
+                    "usuarios_db",
+                    "usuarios"
+                )
+            );
         }
     }
 }
