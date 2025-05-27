@@ -26,6 +26,11 @@ public class ActualizarPerfilCommandHandler : IRequestHandler<ActualizarPerfilCo
     {
         var usuario = await _repository.GetByIdAsync(request.UsuarioId);
 
+        if (usuario == null)
+        {
+            return false;
+        }
+
         usuario.ActualizarPerfil(
             request.Nombre,
             request.Apellido,
@@ -37,18 +42,25 @@ public class ActualizarPerfilCommandHandler : IRequestHandler<ActualizarPerfilCo
         await _repository.UpdateAsync(usuario);
 
         // Publicar evento para sincronización
-        _eventPublisher.Publish(
-            new PerfilActualizadoEvent(
-                request.UsuarioId,
-                request.Nombre,
-                request.Apellido,
-                request.Correo,
-                request.Telefono,
-                request.Direccion
-            ),
-            exchangeName: "usuarios_exchange",
-            routingKey: "perfil.actualizado"
-        );
+        try
+        {
+            _eventPublisher.Publish(
+                new PerfilActualizadoEvent(
+                    request.UsuarioId,
+                    request.Nombre,
+                    request.Apellido,
+                    request.Correo,
+                    request.Telefono,
+                    request.Direccion
+                ),
+                exchangeName: "usuarios_exchange",
+                routingKey: "perfil.actualizado"
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al publicar evento: {ex.Message}");
+        }
 
         // Registrar actividad
         await _actividadRepository.RegistrarActividad(new Actividad(

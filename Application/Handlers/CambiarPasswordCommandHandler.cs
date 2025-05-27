@@ -31,6 +31,11 @@ public class CambiarPasswordCommandHandler : IRequestHandler<CambiarPasswordComm
     {
         var usuario = await _repository.GetByIdAsync(request.UsuarioId);
 
+        if (usuario == null)
+        {
+            return false;
+        }
+
         // Validar password actual
         if (usuario.Password!=request.PasswordActual)
             throw new SecurityException("Contraseña actual incorrecta");
@@ -40,10 +45,18 @@ public class CambiarPasswordCommandHandler : IRequestHandler<CambiarPasswordComm
         await _repository.UpdateAsync(usuario);
 
         // Enviar notificación
-        await _smtpEmailService.EnviarNotificacionCambioPassword(
-            usuario.Correo,
-            usuario.Nombre
-        );
+        try
+        {
+            await _smtpEmailService.EnviarNotificacionCambioPassword(
+                usuario.Correo,
+                usuario.Nombre
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al enviar correo: {ex.Message}");
+        }
+
 
         // Publicar evento de cambio de contraseña
         _eventPublisher.Publish(
