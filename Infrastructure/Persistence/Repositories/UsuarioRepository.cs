@@ -30,10 +30,17 @@ namespace Infrastructure.Persistence.Repositories
         {
             return await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
         }
+
         public async Task<Usuario> GetByEmail(string email)
         {
             return await _context.Usuarios
                 .FirstOrDefaultAsync(u => u.Correo == email);
+        }
+
+        public async Task<Usuario> GetByTokenRecuperacion(string token)
+        {
+            return await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.TokenRecuperacion == token);
         }
     }
 }

@@ -36,6 +36,17 @@ public class SmtpEmailService: ISmtpEmailService
         await cliente.SendMailAsync(mensaje);
     }
 
+    public async Task EnviarEnlaceRecuperacion(string email, string nombre, string token)
+    {
+        var cliente = CrearClienteSmtp();
+        var titulo = "Recuperación de contraseña";
+        //CAMBIAR URL por el link de la aplicación
+        var cuerpo = $"Hola {nombre}, Para recuperar tu contraseña, haz clic en el siguiente enlace: " +
+                     $"https://tuaplicacion.com/recuperar?token={token}";
+        var mensaje = CrearMensaje(cliente.Credentials.GetCredential(cliente.Host, cliente.Port, "").UserName, email, titulo, cuerpo);
+        await cliente.SendMailAsync(mensaje);
+    }
+
     private SmtpClient CrearClienteSmtp()
     {
         var host = _configuration.GetValue<string>("EmailSettings:Host");

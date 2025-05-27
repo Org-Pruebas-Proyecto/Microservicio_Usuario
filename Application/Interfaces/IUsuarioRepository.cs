@@ -8,7 +8,9 @@ public interface IUsuarioRepository
     Task UpdateAsync(Usuario usuario);
 
 
+
     Task<Usuario> GetByIdAsync(Guid id);
     Task<Usuario> GetByEmail(string email);
 
+    Task<Usuario> GetByTokenRecuperacion(string token);
 }
