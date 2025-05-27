@@ -86,5 +86,23 @@ namespace Web.Controllers
             var result = await _mediator.Send(command);
             return result ? Ok("Contraseña actualizada") : BadRequest("Token inválido o expirado");
         }
+
+        [HttpGet("{usuarioId}/historial")]
+        public async Task<IActionResult> ObtenerHistorial(
+            Guid usuarioId,
+            [FromQuery] string? tipoAccion,
+            [FromQuery] DateTime? desde,
+            [FromQuery] DateTime? hasta)
+        {
+
+            var actividades = await _mediator.Send(new ObtenerHistorialQuery(
+                usuarioId,
+                tipoAccion,
+                desde,
+                hasta
+            ));
+
+            return Ok(actividades);
+        }
     }
 }

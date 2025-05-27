@@ -2,6 +2,7 @@
 using MediatR;
 using Application.Interfaces;
 using Domain.Events;
+using Domain.ValueObjects;
 
 
 namespace Application.Handlers;
@@ -12,17 +13,20 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, G
     private readonly IUsuarioFactory _factory;
     private readonly IEventPublisher _eventPublisher;
     private readonly ISmtpEmailService _smtpEmailService;
+    private readonly IActividadRepository _actividadRepository;
 
     public CrearUsuarioCommandHandler(
         IUsuarioRepository repository,
         IUsuarioFactory factory,
         IEventPublisher eventPublisher,
-        ISmtpEmailService smtpEmailService)
+        ISmtpEmailService smtpEmailService,
+        IActividadRepository actividadRepository)
     {
         _repository = repository;
         _factory = factory;
         _eventPublisher = eventPublisher;
         _smtpEmailService = smtpEmailService;
+        _actividadRepository = actividadRepository;
     }
 
     public async Task<Guid> Handle(CrearUsuarioCommand request, CancellationToken cancellationToken)
@@ -66,6 +70,12 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, G
             usuario.CodigoConfirmacion
         );
 
+        // Registrar actividad
+        await _actividadRepository.RegistrarActividad(new Actividad(
+            usuario.Id,
+            "Registro de Usuario",
+            "El usuario se registró en el sistema"
+        ));
         return usuario.Id;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Application.Commands;
 using Application.Interfaces;
 using Domain.Events;
+using Domain.ValueObjects;
 using MediatR;
 
 
@@ -10,6 +11,7 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
 {
     private readonly IUsuarioRepository _repository;
     private readonly IEventPublisher _eventPublisher;
+    private readonly IActividadRepository _actividadRepository;
 
 
 
@@ -39,6 +41,12 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
             exchangeName: "usuarios_exchange",
             routingKey: "usuario.password.cambiado"
         );
+
+        await _actividadRepository.RegistrarActividad(new Actividad(
+            usuario.Id,
+            "Restablecimiento de Contraseña",
+            "El usuario restableció su contraseña"
+        ));
 
         return true;
     }

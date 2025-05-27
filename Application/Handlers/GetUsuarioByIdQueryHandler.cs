@@ -7,9 +7,9 @@ namespace Application.Handlers;
 
 public class GetUsuarioByIdQueryHandler : IRequestHandler<GetUsuarioByIdQuery, UsuarioMongo>
 {
-    private readonly IMongoUsuarioRepository<UsuarioMongo> _mongoRepository;
+    private readonly IMongoRepository<UsuarioMongo> _mongoRepository;
 
-    public GetUsuarioByIdQueryHandler(IMongoUsuarioRepository<UsuarioMongo> mongoRepository)
+    public GetUsuarioByIdQueryHandler(IMongoRepository<UsuarioMongo> mongoRepository)
     {
         _mongoRepository = mongoRepository;
     }

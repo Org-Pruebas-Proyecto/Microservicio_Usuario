@@ -1,12 +1,13 @@
-﻿using System.Text;
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Events;
-using MongoDB.Driver;
-using RabbitMQ.Client.Events;
-using RabbitMQ.Client;
-using System.Text.Json;
+using Domain.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MongoDB.Driver;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
 
 namespace Infrastructure.EventBus.Consumers;
 
@@ -91,6 +92,10 @@ public class RabbitMQConsumerService : IHostedService
                 case "PerfilActualizadoEvent":
                     await HandlePerfilActualizadoEvent(message, serviceProvider);
                     break;
+                case "ActividadRegistradaEvent":
+                    var eventoActividad = JsonSerializer.Deserialize<ActividadRegistradaEvent>(message);
+                    await GuardarActividadMongo(eventoActividad, serviceProvider);
+                    break;
                 default:
                     throw new InvalidOperationException($"Tipo de evento desconocido: {eventType}");
             }
@@ -165,6 +170,24 @@ public class RabbitMQConsumerService : IHostedService
         await collection.UpdateOneAsync(filter, update);
     }
 
+    private async Task GuardarActividadMongo(ActividadRegistradaEvent evento, IServiceProvider sp)
+    {
+        var mongoClient = sp.GetRequiredService<IMongoClient>();
+        var collection = mongoClient
+            .GetDatabase("historial_db")
+            .GetCollection<ActividadMongo>("actividades");
+
+        var actividadMongo = new ActividadMongo
+        {
+            Id = evento.ActividadId,
+            UsuarioId = evento.UsuarioId,
+            TipoAccion = evento.TipoAccion,
+            Detalles = evento.Detalles,
+            Fecha = evento.Fecha
+        };
+
+        await collection.InsertOneAsync(actividadMongo);
+    }
     public Task StopAsync(CancellationToken cancellationToken)
     {
         _channel?.Close();

@@ -1,6 +1,7 @@
 ﻿using Application.Commands;
 using Application.Interfaces;
 using Domain.Events;
+using Domain.ValueObjects;
 using MediatR;
 
 namespace Application.Handlers;
@@ -9,13 +10,16 @@ public class ActualizarPerfilCommandHandler : IRequestHandler<ActualizarPerfilCo
 {
     private readonly IUsuarioRepository _repository;
     private readonly IEventPublisher _eventPublisher;
+    private readonly IActividadRepository _actividadRepository;
 
     public ActualizarPerfilCommandHandler(
         IUsuarioRepository repository,
-        IEventPublisher eventPublisher)
+        IEventPublisher eventPublisher,
+        IActividadRepository actividadRepository)
     {
         _repository = repository;
         _eventPublisher = eventPublisher;
+        _actividadRepository = actividadRepository;
     }
 
     public async Task<bool> Handle(ActualizarPerfilCommand request, CancellationToken cancellationToken)
@@ -45,6 +49,13 @@ public class ActualizarPerfilCommandHandler : IRequestHandler<ActualizarPerfilCo
             exchangeName: "usuarios_exchange",
             routingKey: "perfil.actualizado"
         );
+
+        // Registrar actividad
+        await _actividadRepository.RegistrarActividad(new Actividad(
+            usuario.Id,
+            "Actualización de Perfil",
+            "El usuario actualizó su perfil"
+        ));
 
         return true;
     }

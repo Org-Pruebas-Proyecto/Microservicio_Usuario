@@ -3,6 +3,7 @@ using Application.Interfaces;
 using MediatR;
 using System.Security;
 using Domain.Events;
+using Domain.ValueObjects;
 
 
 namespace Application.Handlers;
@@ -12,15 +13,18 @@ public class CambiarPasswordCommandHandler : IRequestHandler<CambiarPasswordComm
     private readonly IUsuarioRepository _repository;
     private readonly ISmtpEmailService _smtpEmailService;
     private readonly IEventPublisher _eventPublisher;
+    private readonly IActividadRepository _actividadRepository;
 
     public CambiarPasswordCommandHandler(
         IUsuarioRepository repository,
         ISmtpEmailService smtpEmailService,
-        IEventPublisher eventPublisher)
+        IEventPublisher eventPublisher,
+        IActividadRepository actividadRepository)
     {
         _repository = repository;
         _smtpEmailService = smtpEmailService;
         _eventPublisher = eventPublisher;
+        _actividadRepository = actividadRepository;
     }
 
     public async Task<bool> Handle(CambiarPasswordCommand request, CancellationToken cancellationToken)
@@ -47,6 +51,12 @@ public class CambiarPasswordCommandHandler : IRequestHandler<CambiarPasswordComm
             exchangeName: "usuarios_exchange",
             routingKey: "usuario.password.cambiado"
         );
+
+        await _actividadRepository.RegistrarActividad(new Actividad(
+            usuario.Id,
+            "Cambio de Contraseña",
+            "El usuario actualizó su contraseña"
+        ));
 
         return true;
     }

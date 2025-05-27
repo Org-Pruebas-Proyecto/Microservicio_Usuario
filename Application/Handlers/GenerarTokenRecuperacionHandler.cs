@@ -1,5 +1,6 @@
 ﻿using Application.Commands;
 using Application.Interfaces;
+using Domain.ValueObjects;
 using MediatR;
 
 namespace Application.Handlers;
@@ -8,14 +9,16 @@ public class GenerarTokenRecuperacionHandler : IRequestHandler<GenerarTokenRecup
 {
     private readonly IUsuarioRepository _repository;
     private readonly ISmtpEmailService _smtpEmailService;
+    private readonly IActividadRepository _actividadRepository;
 
     public GenerarTokenRecuperacionHandler(
         IUsuarioRepository repository,
-        ISmtpEmailService smtpEmailService)
+        ISmtpEmailService smtpEmailService,
+        IActividadRepository actividadRepository)
     {
         _repository = repository;
         _smtpEmailService = smtpEmailService;
-
+        _actividadRepository = actividadRepository;
     }
 
     public async Task<bool> Handle(GenerarTokenRecuperacionCommand request, CancellationToken cancellationToken)
@@ -32,6 +35,11 @@ public class GenerarTokenRecuperacionHandler : IRequestHandler<GenerarTokenRecup
             usuario.TokenRecuperacion
         );
 
+        await _actividadRepository.RegistrarActividad(new Actividad(
+            usuario.Id,
+            "Generación de Token de Recuperación",
+            "El usuario solicitó un token de recuperación de contraseña"
+        ));
         return true;
     }
 }

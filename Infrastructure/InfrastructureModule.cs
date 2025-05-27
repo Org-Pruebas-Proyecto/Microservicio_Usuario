@@ -1,15 +1,16 @@
 using Application.Interfaces;
 using Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+using Domain.ValueObjects;
+using Infrastructure.DataBase;
+using Infrastructure.EventBus.Consumers;
+using Infrastructure.EventBus.Events;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
-using Infrastructure.EventBus.Events;
-using Infrastructure.EventBus.Consumers;
-using MongoDB.Driver;
-using Infrastructure.DataBase;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MongoDB.Driver;
 
 namespace Infrastructure
 {
@@ -52,13 +53,20 @@ namespace Infrastructure
                 ));
 
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-            services.AddSingleton<IMongoUsuarioRepository<UsuarioMongo>, MongoUsuarioRepository<UsuarioMongo>>(
-                sp => new MongoUsuarioRepository<UsuarioMongo>(
+            services.AddSingleton<IMongoRepository<UsuarioMongo>, MongoRepository<UsuarioMongo>>(
+                sp => new MongoRepository<UsuarioMongo>(
                     sp.GetRequiredService<IMongoClient>(),
                     "usuarios_db",
                     "usuarios"
                 )
             );
+            services.AddScoped<IActividadRepository, ActividadRepository>();
+            services.AddScoped<IMongoRepository<ActividadMongo>>(sp =>
+                new MongoRepository<ActividadMongo>(
+                    sp.GetRequiredService<IMongoClient>(),
+                    "historial_db",
+                    "actividades"
+                ));
         }
     }
 }
