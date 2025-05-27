@@ -38,6 +38,12 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, G
             request.Direccion
         );
 
+        if (usuario == null)
+        {
+            throw new InvalidOperationException("Error al crear usuario");
+        }
+
+
         await _repository.AddAsync(usuario);
 
         // Publicar evento
@@ -60,11 +66,22 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, G
         );
 
         // Enviar correo de confirmación
-        await _smtpEmailService.EnviarCorreoConfirmacion(
-            usuario.Correo,
-            usuario.Nombre,
-            usuario.CodigoConfirmacion
-        );
+
+        try
+        {
+            await _smtpEmailService.EnviarCorreoConfirmacion(
+                usuario.Correo,
+                usuario.Nombre,
+                usuario.CodigoConfirmacion
+            );
+        }
+        catch (Exception ex)
+        {
+            // Loggear o manejar la excepción según sea necesario
+            Console.WriteLine($"Error al enviar correo: {ex.Message}");
+        }
+
+
 
         return usuario.Id;
     }

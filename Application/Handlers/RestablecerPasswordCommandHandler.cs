@@ -34,11 +34,19 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
 
         await _repository.UpdateAsync(usuario);
 
-        _eventPublisher.Publish(
-            new UsuarioPasswordCambiadoEvent(usuario.Id, usuario.Password),
-            exchangeName: "usuarios_exchange",
-            routingKey: "usuario.password.cambiado"
-        );
+
+        try
+        {
+            _eventPublisher.Publish(
+                new UsuarioPasswordCambiadoEvent(usuario.Id, usuario.Password),
+                exchangeName: "usuarios_exchange",
+                routingKey: "usuario.password.cambiado"
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al publicar evento: {ex.Message}");
+        }
 
         return true;
     }
