@@ -12,16 +12,16 @@ namespace Usuarios.Tests.Application.Tests.CommandsHandlers;
 
 public class GetUsuarioByIdQueryHandlerTests
 {
-    private readonly Mock<IMongoUsuarioRepository<UsuarioMongo>> _mongoRepositoryMock;
+    private readonly Mock<IMongoRepository<UsuarioMongo>> _mongoRepositoryMock;
     private readonly GetUsuarioByIdQueryHandler _handler;
 
     public GetUsuarioByIdQueryHandlerTests()
     {
-        _mongoRepositoryMock = new Mock<IMongoUsuarioRepository<UsuarioMongo>>();
+        _mongoRepositoryMock = new Mock<IMongoRepository<UsuarioMongo>>();
         _handler = new GetUsuarioByIdQueryHandler(_mongoRepositoryMock.Object);
     }
 
-    /// Caso base: Usuario encontrado en la base de datos
+    /// ✅ **Caso base: Usuario encontrado en la base de datos**
     [Fact]
     public async Task Handle_DeberiaRetornarUsuario_CuandoUsuarioExiste()
     {
@@ -51,7 +51,7 @@ public class GetUsuarioByIdQueryHandlerTests
         _mongoRepositoryMock.Verify(r => r.GetByIdAsync(usuarioId.ToString()), Times.Once);
     }
 
-    /// Error: Usuario no encontrado
+    /// ❌ **Error: Usuario no encontrado**
     [Fact]
     public async Task Handle_DeberiaRetornarNull_CuandoUsuarioNoExiste()
     {
@@ -66,7 +66,7 @@ public class GetUsuarioByIdQueryHandlerTests
         _mongoRepositoryMock.Verify(r => r.GetByIdAsync(usuarioId.ToString()), Times.Once);
     }
 
-    /// Error: Fallo en la base de datos
+    /// ❌ **Error: Fallo en la base de datos**
     [Fact]
     public async Task Handle_DeberiaLanzarExcepcion_SiAccesoABaseDeDatosFalla()
     {

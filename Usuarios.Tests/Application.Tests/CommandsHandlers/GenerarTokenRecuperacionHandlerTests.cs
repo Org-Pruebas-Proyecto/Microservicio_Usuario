@@ -7,7 +7,7 @@ using Application.Commands;
 using Application.Handlers;
 using Application.Interfaces;
 using Domain.Entities;
-
+using Domain.ValueObjects;
 
 namespace Usuarios.Tests.Application.Tests.CommandsHandlers;
 
@@ -15,19 +15,23 @@ public class GenerarTokenRecuperacionHandlerTests
 {
     private readonly Mock<IUsuarioRepository> _repositoryMock;
     private readonly Mock<ISmtpEmailService> _smtpEmailServiceMock;
+    private readonly Mock<IActividadRepository> _actividadRepositoryMock;
     private readonly GenerarTokenRecuperacionHandler _handler;
 
     public GenerarTokenRecuperacionHandlerTests()
     {
         _repositoryMock = new Mock<IUsuarioRepository>();
         _smtpEmailServiceMock = new Mock<ISmtpEmailService>();
+        _actividadRepositoryMock = new Mock<IActividadRepository>();
+
         _handler = new GenerarTokenRecuperacionHandler(
             _repositoryMock.Object,
-            _smtpEmailServiceMock.Object
+            _smtpEmailServiceMock.Object,
+            _actividadRepositoryMock.Object
         );
     }
 
-    /// Caso base: Token generado correctamente
+    /// ✅ **Caso base: Token generado correctamente**
     [Fact]
     public async Task Handle_DeberiaGenerarTokenRecuperacion_CuandoUsuarioExiste()
     {
@@ -36,6 +40,7 @@ public class GenerarTokenRecuperacionHandlerTests
 
         _repositoryMock.Setup(r => r.GetByEmail(usuario.Correo)).ReturnsAsync(usuario);
         _repositoryMock.Setup(r => r.UpdateAsync(usuario)).Returns(Task.CompletedTask);
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
 
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
@@ -43,9 +48,10 @@ public class GenerarTokenRecuperacionHandlerTests
         Assert.NotNull(usuario.TokenRecuperacion);
         _repositoryMock.Verify(r => r.UpdateAsync(usuario), Times.Once);
         _smtpEmailServiceMock.Verify(s => s.EnviarEnlaceRecuperacion(usuario.Correo, usuario.Nombre, usuario.TokenRecuperacion), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 
-    /// Error: Usuario no encontrado
+    /// ❌ **Error: Usuario no encontrado**
     [Fact]
     public async Task Handle_DeberiaRetornarFalse_CuandoUsuarioNoExiste()
     {
@@ -58,9 +64,10 @@ public class GenerarTokenRecuperacionHandlerTests
         Assert.False(resultado);
         _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
         _smtpEmailServiceMock.Verify(s => s.EnviarEnlaceRecuperacion(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
     }
 
-    /// Error: Fallo en la actualización del usuario
+    /// ❌ **Error: Fallo en la actualización del usuario**
     [Fact]
     public async Task Handle_DeberiaLanzarExcepcion_SiActualizacionUsuarioFalla()
     {
@@ -74,7 +81,7 @@ public class GenerarTokenRecuperacionHandlerTests
         Assert.Equal("Error al actualizar usuario", ex.Message);
     }
 
-    /// Error: Fallo en el envío del correo
+    /// ❌ **Error: Fallo en el envío del correo**
     [Fact]
     public async Task Handle_DeberiaCapturarError_CuandoEnvioDeCorreoFalla()
     {
@@ -86,9 +93,12 @@ public class GenerarTokenRecuperacionHandlerTests
         _smtpEmailServiceMock.Setup(s => s.EnviarEnlaceRecuperacion(usuario.Correo, usuario.Nombre, usuario.TokenRecuperacion))
             .ThrowsAsync(new Exception("Error al enviar correo"));
 
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
+
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(resultado);
         _smtpEmailServiceMock.Verify(s => s.EnviarEnlaceRecuperacion(usuario.Correo, usuario.Nombre, usuario.TokenRecuperacion), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 }

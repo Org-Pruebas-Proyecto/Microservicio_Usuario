@@ -8,7 +8,7 @@ using Application.Handlers;
 using Application.Interfaces;
 using Domain.Events;
 using Domain.Entities;
-
+using Domain.ValueObjects;
 
 namespace Usuarios.Tests.Application.Tests.CommandsHandlers;
 
@@ -16,19 +16,23 @@ public class ActualizarPerfilCommandHandlerTests
 {
     private readonly Mock<IUsuarioRepository> _repositoryMock;
     private readonly Mock<IEventPublisher> _eventPublisherMock;
+    private readonly Mock<IActividadRepository> _actividadRepositoryMock;
     private readonly ActualizarPerfilCommandHandler _handler;
 
     public ActualizarPerfilCommandHandlerTests()
     {
         _repositoryMock = new Mock<IUsuarioRepository>();
         _eventPublisherMock = new Mock<IEventPublisher>();
+        _actividadRepositoryMock = new Mock<IActividadRepository>();
+
         _handler = new ActualizarPerfilCommandHandler(
             _repositoryMock.Object,
-            _eventPublisherMock.Object
+            _eventPublisherMock.Object,
+            _actividadRepositoryMock.Object
         );
     }
 
-    /// Caso base: Perfil actualizado correctamente
+    /// ✅ **Caso base: Perfil actualizado correctamente**
     [Fact]
     public async Task Handle_DeberiaActualizarPerfil_CuandoDatosSonValidos()
     {
@@ -37,6 +41,7 @@ public class ActualizarPerfilCommandHandlerTests
 
         _repositoryMock.Setup(r => r.GetByIdAsync(usuario.Id)).ReturnsAsync(usuario);
         _repositoryMock.Setup(r => r.UpdateAsync(usuario)).Returns(Task.CompletedTask);
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
 
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
@@ -49,9 +54,10 @@ public class ActualizarPerfilCommandHandlerTests
 
         _repositoryMock.Verify(r => r.UpdateAsync(usuario), Times.Once);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<PerfilActualizadoEvent>(), "usuarios_exchange", "perfil.actualizado"), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 
-    /// Error: Usuario no encontrado
+    /// ❌ **Error: Usuario no encontrado**
     [Fact]
     public async Task Handle_DeberiaRetornarFalse_CuandoUsuarioNoExiste()
     {
@@ -64,9 +70,10 @@ public class ActualizarPerfilCommandHandlerTests
         Assert.False(resultado);
         _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<PerfilActualizadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
     }
 
-    /// Error: Fallo en la actualización del perfil
+    /// ❌ **Error: Fallo en la actualización del perfil**
     [Fact]
     public async Task Handle_DeberiaLanzarExcepcion_SiActualizacionUsuarioFalla()
     {
@@ -80,7 +87,7 @@ public class ActualizarPerfilCommandHandlerTests
         Assert.Equal("Error al actualizar perfil", ex.Message);
     }
 
-    /// Error: Fallo en la publicación del evento
+    /// ❌ **Error: Fallo en la publicación del evento**
     [Fact]
     public async Task Handle_DeberiaCapturarError_CuandoPublicacionDeEventoFalla()
     {
@@ -92,9 +99,12 @@ public class ActualizarPerfilCommandHandlerTests
         _eventPublisherMock.Setup(e => e.Publish(It.IsAny<PerfilActualizadoEvent>(), "usuarios_exchange", "perfil.actualizado"))
             .Throws(new Exception("Error al publicar evento"));
 
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
+
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(resultado);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<PerfilActualizadoEvent>(), "usuarios_exchange", "perfil.actualizado"), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 }

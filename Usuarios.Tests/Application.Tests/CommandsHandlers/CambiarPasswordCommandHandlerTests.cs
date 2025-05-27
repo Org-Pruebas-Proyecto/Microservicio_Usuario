@@ -9,7 +9,7 @@ using Application.Handlers;
 using Application.Interfaces;
 using Domain.Events;
 using Domain.Entities;
-
+using Domain.ValueObjects;
 
 namespace Usuarios.Tests.Application.Tests.CommandsHandlers;
 
@@ -18,6 +18,7 @@ public class CambiarPasswordCommandHandlerTests
     private readonly Mock<IUsuarioRepository> _repositoryMock;
     private readonly Mock<ISmtpEmailService> _smtpEmailServiceMock;
     private readonly Mock<IEventPublisher> _eventPublisherMock;
+    private readonly Mock<IActividadRepository> _actividadRepositoryMock;
     private readonly CambiarPasswordCommandHandler _handler;
 
     public CambiarPasswordCommandHandlerTests()
@@ -25,15 +26,17 @@ public class CambiarPasswordCommandHandlerTests
         _repositoryMock = new Mock<IUsuarioRepository>();
         _smtpEmailServiceMock = new Mock<ISmtpEmailService>();
         _eventPublisherMock = new Mock<IEventPublisher>();
+        _actividadRepositoryMock = new Mock<IActividadRepository>();
 
         _handler = new CambiarPasswordCommandHandler(
             _repositoryMock.Object,
             _smtpEmailServiceMock.Object,
-            _eventPublisherMock.Object
+            _eventPublisherMock.Object,
+            _actividadRepositoryMock.Object
         );
     }
 
-    /// Caso base: Cambio de contraseña exitoso
+    /// ✅ **Caso base: Cambio de contraseña exitoso**
     [Fact]
     public async Task Handle_DeberiaCambiarPassword_CuandoDatosSonCorrectos()
     {
@@ -42,6 +45,7 @@ public class CambiarPasswordCommandHandlerTests
 
         _repositoryMock.Setup(r => r.GetByIdAsync(usuario.Id)).ReturnsAsync(usuario);
         _repositoryMock.Setup(r => r.UpdateAsync(usuario)).Returns(Task.CompletedTask);
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
 
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
@@ -50,9 +54,10 @@ public class CambiarPasswordCommandHandlerTests
         _repositoryMock.Verify(r => r.UpdateAsync(usuario), Times.Once);
         _smtpEmailServiceMock.Verify(s => s.EnviarNotificacionCambioPassword(usuario.Correo, usuario.Nombre), Times.Once);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), "usuarios_exchange", "usuario.password.cambiado"), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 
-    /// Error: Usuario no encontrado
+    /// ❌ **Error: Usuario no encontrado**
     [Fact]
     public async Task Handle_DeberiaRetornarFalse_CuandoUsuarioNoExiste()
     {
@@ -66,9 +71,10 @@ public class CambiarPasswordCommandHandlerTests
         _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
         _smtpEmailServiceMock.Verify(s => s.EnviarNotificacionCambioPassword(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
     }
 
-    /// Error: Contraseña actual incorrecta
+    /// ❌ **Error: Contraseña actual incorrecta**
     [Fact]
     public async Task Handle_DeberiaLanzarExcepcion_CuandoPasswordActualEsIncorrecta()
     {
@@ -81,7 +87,7 @@ public class CambiarPasswordCommandHandlerTests
         Assert.Equal("Contraseña actual incorrecta", ex.Message);
     }
 
-    /// Error: Fallo al actualizar contraseña
+    /// ❌ **Error: Fallo al actualizar contraseña**
     [Fact]
     public async Task Handle_DeberiaLanzarExcepcion_SiActualizacionDeUsuarioFalla()
     {
@@ -95,7 +101,7 @@ public class CambiarPasswordCommandHandlerTests
         Assert.Equal("Error al actualizar usuario", ex.Message);
     }
 
-    /// Error: Fallo en el envío de notificación de cambio
+    /// ❌ **Error: Fallo en el envío de notificación de cambio**
     [Fact]
     public async Task Handle_DeberiaCapturarError_CuandoEnvioDeCorreoFalla()
     {
@@ -107,9 +113,12 @@ public class CambiarPasswordCommandHandlerTests
         _smtpEmailServiceMock.Setup(s => s.EnviarNotificacionCambioPassword(usuario.Correo, usuario.Nombre))
             .ThrowsAsync(new Exception("Error al enviar correo"));
 
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
+
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(resultado);
         _smtpEmailServiceMock.Verify(s => s.EnviarNotificacionCambioPassword(usuario.Correo, usuario.Nombre), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 }

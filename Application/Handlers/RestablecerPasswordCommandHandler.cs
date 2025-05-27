@@ -26,11 +26,11 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
     {
         var usuario = await _repository.GetByTokenRecuperacion(request.Token);
 
-        if (usuario == null ||
-            usuario.ExpiracionTokenRecuperacion < DateTime.UtcNow)
+        if (usuario == null || usuario.ExpiracionTokenRecuperacion == null || usuario.ExpiracionTokenRecuperacion < DateTime.UtcNow)
         {
             return false;
         }
+
 
         usuario.ActualizarPassword(request.NuevaPassword);
 

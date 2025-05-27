@@ -9,7 +9,7 @@ using Application.Handlers;
 using Application.Interfaces;
 using Domain.Events;
 using Domain.Entities;
-
+using Domain.ValueObjects;
 
 namespace Usuarios.Tests.Application.Tests.CommandsHandlers;
 
@@ -17,19 +17,23 @@ public class ConfirmarUsuarioCommandHandlerTests
 {
     private readonly Mock<IUsuarioRepository> _repositoryMock;
     private readonly Mock<IEventPublisher> _eventPublisherMock;
+    private readonly Mock<IActividadRepository> _actividadRepositoryMock;
     private readonly ConfirmarUsuarioCommandHandler _handler;
 
     public ConfirmarUsuarioCommandHandlerTests()
     {
         _repositoryMock = new Mock<IUsuarioRepository>();
         _eventPublisherMock = new Mock<IEventPublisher>();
+        _actividadRepositoryMock = new Mock<IActividadRepository>();
+
         _handler = new ConfirmarUsuarioCommandHandler(
             _repositoryMock.Object,
-            _eventPublisherMock.Object
+            _eventPublisherMock.Object,
+            _actividadRepositoryMock.Object
         );
     }
 
-    /// Caso base: Usuario confirmado exitosamente
+    /// ✅ **Caso base: Usuario confirmado exitosamente**
     [Fact]
     public async Task Handle_DeberiaConfirmarUsuario_CuandoCodigoEsCorrecto_YNoExpirado()
     {
@@ -46,15 +50,17 @@ public class ConfirmarUsuarioCommandHandlerTests
 
         _repositoryMock.Setup(r => r.GetByEmail(usuario.Correo)).ReturnsAsync(usuario);
         _repositoryMock.Setup(r => r.UpdateAsync(usuario)).Returns(Task.CompletedTask);
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
 
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(resultado);
         _repositoryMock.Verify(r => r.UpdateAsync(usuario), Times.Once);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioConfirmadoEvent>(), "usuarios_exchange", "usuario.confirmado"), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 
-    /// Error: Usuario no encontrado
+    /// ❌ **Error: Usuario no encontrado**
     [Fact]
     public async Task Handle_DeberiaRetornarFalse_CuandoUsuarioNoExiste()
     {
@@ -67,9 +73,10 @@ public class ConfirmarUsuarioCommandHandlerTests
         Assert.False(resultado);
         _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioConfirmadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
     }
 
-    /// Error: Código incorrecto
+    /// ❌ **Error: Código incorrecto**
     [Fact]
     public async Task Handle_DeberiaRetornarFalse_CuandoCodigoConfirmacionEsIncorrecto()
     {
@@ -90,9 +97,10 @@ public class ConfirmarUsuarioCommandHandlerTests
         Assert.False(resultado);
         _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioConfirmadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
     }
 
-    /// Error: Código expirado
+    /// ❌ **Error: Código expirado**
     [Fact]
     public async Task Handle_DeberiaRetornarFalse_CuandoCodigoConfirmacionHaExpirado()
     {
@@ -113,9 +121,10 @@ public class ConfirmarUsuarioCommandHandlerTests
         Assert.False(resultado);
         _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
         _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioConfirmadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
     }
 
-    /// Error: Fallo en la actualización del usuario
+    /// ❌ **Error: Fallo en la actualización del usuario**
     [Fact]
     public async Task Handle_DeberiaLanzarExcepcion_SiActualizacionUsuarioFalla()
     {
