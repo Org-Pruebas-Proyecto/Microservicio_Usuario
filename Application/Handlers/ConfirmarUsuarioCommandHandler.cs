@@ -43,12 +43,27 @@ public class ConfirmarUsuarioCommandHandler : IRequestHandler<ConfirmarUsuarioCo
             routingKey: "usuario.confirmado"
         );
 
-        // Registrar actividad de confirmación
-        await _actividadRepository.RegistrarActividad(new Actividad(
+        var actividad = new Actividad(
             usuario.Id,
-            "Verificacion de Cuenta",
-            "El usuario verificó su cuenta"
-        ));
+            "Cuenta Confirmada",
+            "El usuario ha confirmado su cuenta exitosamente."
+        );
+
+        // Registrar actividad de confirmación
+        await _actividadRepository.RegistrarActividad(actividad);
+
+        // Publicar evento de actividad registrada (Mongo)
+        _eventPublisher.Publish(
+            new ActividadRegistradaEvent(
+                actividad.Id,
+                actividad.UsuarioId,
+                actividad.TipoAccion,
+                actividad.Detalles,
+                actividad.Fecha
+            ),
+            exchangeName: "usuarios_exchange",
+            routingKey: "actividad.registrada"
+        );
 
         return true;
     }

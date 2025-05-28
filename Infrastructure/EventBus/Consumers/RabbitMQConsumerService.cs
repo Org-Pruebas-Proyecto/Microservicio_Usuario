@@ -88,11 +88,21 @@ public class RabbitMQConsumerService : IHostedService
                     await HandleEvent<UsuarioPasswordCambiadoEvent>(message, sp => GetMongoCollectionUsuarios(sp), HandleUsuarioPasswordCambiadoEvent);
                     break;
                 case "PerfilActualizadoEvent":
-                    await HandleEvent<PerfilActualizadoEvent>(message, sp => GetMongoCollectionUsuarios(sp), HandlePerfilActualizadoEvent);
+                    await HandleEvent<PerfilActualizadoEvent>(message, GetMongoCollectionUsuarios, HandlePerfilActualizadoEvent);
                     break;
                 case "ActividadRegistradaEvent":
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    await HandleEvent<ActividadRegistradaEvent>(message, sp => GetMongoCollectionActividad(sp), GuardarActividadMongo, options);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        // Permitir deserialización desde campos
+                        IncludeFields = true
+                    };
+                    await HandleEvent<ActividadRegistradaEvent>(
+                        message,
+                        GetMongoCollectionActividad,
+                        GuardarActividadMongo,
+                        options
+                    );
                     break;
                 default:
                     throw new InvalidOperationException($"Tipo de evento desconocido: {eventType}");

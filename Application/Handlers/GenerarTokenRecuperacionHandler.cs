@@ -1,5 +1,6 @@
 ﻿using Application.Commands;
 using Application.Interfaces;
+using Domain.Events;
 using Domain.ValueObjects;
 using MediatR;
 
@@ -10,15 +11,18 @@ public class GenerarTokenRecuperacionHandler : IRequestHandler<GenerarTokenRecup
     private readonly IUsuarioRepository _repository;
     private readonly ISmtpEmailService _smtpEmailService;
     private readonly IActividadRepository _actividadRepository;
+    private readonly IEventPublisher _eventPublisher;
 
     public GenerarTokenRecuperacionHandler(
         IUsuarioRepository repository,
         ISmtpEmailService smtpEmailService,
-        IActividadRepository actividadRepository)
+        IActividadRepository actividadRepository,
+        IEventPublisher eventPublisher)
     {
         _repository = repository;
         _smtpEmailService = smtpEmailService;
         _actividadRepository = actividadRepository;
+        _eventPublisher = eventPublisher;
     }
 
     public async Task<bool> Handle(GenerarTokenRecuperacionCommand request, CancellationToken cancellationToken)
@@ -35,11 +39,26 @@ public class GenerarTokenRecuperacionHandler : IRequestHandler<GenerarTokenRecup
             usuario.TokenRecuperacion
         );
 
-        await _actividadRepository.RegistrarActividad(new Actividad(
+        var actividad = new Actividad(
             usuario.Id,
             "Generación de Token de Recuperación",
-            "El usuario solicitó un token de recuperación de contraseña"
-        ));
+            "El usuario solicitó recuperación de contraseña");
+
+        await _actividadRepository.RegistrarActividad(actividad);
+
+        // Publicar evento de actividad registrada (Mongo)
+        _eventPublisher.Publish(
+            new ActividadRegistradaEvent(
+                actividad.Id,
+                actividad.UsuarioId,
+                actividad.TipoAccion,
+                actividad.Detalles,
+                actividad.Fecha
+            ),
+            exchangeName: "usuarios_exchange",
+            routingKey: "actividad.registrada"
+        );
+
         return true;
     }
 }

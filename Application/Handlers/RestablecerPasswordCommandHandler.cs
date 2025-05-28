@@ -50,11 +50,26 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
             Console.WriteLine($"Error al publicar evento: {ex.Message}");
         }
 
-        await _actividadRepository.RegistrarActividad(new Actividad(
+        var actividad = new Actividad(
             usuario.Id,
             "Restablecimiento de Contraseña",
-            "El usuario restableció su contraseña"
-        ));
+            "El usuario ha restablecido su contraseña exitosamente."
+        );
+
+        await _actividadRepository.RegistrarActividad(actividad);
+
+        // Publicar evento de actividad registrada (Mongo)
+        _eventPublisher.Publish(
+            new ActividadRegistradaEvent(
+                actividad.Id,
+                actividad.UsuarioId,
+                actividad.TipoAccion,
+                actividad.Detalles,
+                actividad.Fecha
+            ),
+            exchangeName: "usuarios_exchange",
+            routingKey: "actividad.registrada"
+        );
 
         return true;
     }

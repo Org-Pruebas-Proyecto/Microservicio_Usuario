@@ -62,12 +62,28 @@ public class ActualizarPerfilCommandHandler : IRequestHandler<ActualizarPerfilCo
             Console.WriteLine($"Error al publicar evento: {ex.Message}");
         }
 
+        var actividad = new Actividad(
+            request.UsuarioId,
+            "Perfil Actualizado",
+            "El usuario ha actualizado su perfil."
+        );
+
         // Registrar actividad
-        await _actividadRepository.RegistrarActividad(new Actividad(
-            usuario.Id,
-            "Actualización de Perfil",
-            "El usuario actualizó su perfil"
-        ));
+        await _actividadRepository.RegistrarActividad(actividad);
+
+
+        // Publicar evento de actividad registrada (Mongo)
+        _eventPublisher.Publish(
+            new ActividadRegistradaEvent(
+                actividad.Id,
+                actividad.UsuarioId,
+                actividad.TipoAccion,
+                actividad.Detalles,
+                actividad.Fecha
+            ),
+            exchangeName: "usuarios_exchange",
+            routingKey: "actividad.registrada"
+        );
 
         return true;
     }

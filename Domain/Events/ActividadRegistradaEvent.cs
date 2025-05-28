@@ -1,21 +1,41 @@
 ﻿using Domain.ValueObjects;
+using System.Text.Json.Serialization;
 
 namespace Domain.Events;
 
 public class ActividadRegistradaEvent
 {
+    public string Type => "ActividadRegistradaEvent";
+    [JsonPropertyName("actividadId")]
     public Guid ActividadId { get; }
+
+    [JsonPropertyName("usuarioId")]
     public Guid UsuarioId { get; }
+
+    [JsonPropertyName("tipoAccion")]
     public string TipoAccion { get; }
+
+    [JsonPropertyName("detalles")]
     public string Detalles { get; }
+
+    [JsonPropertyName("fecha")]
     public DateTime Fecha { get; }
 
-    public ActividadRegistradaEvent(Actividad actividad)
+    // Constructor con nombres de parámetros en camelCase
+    [JsonConstructor]
+    public ActividadRegistradaEvent(
+        Guid actividadId,
+        Guid usuarioId,
+        string tipoAccion,
+        string detalles,
+        DateTime fecha)
     {
-        ActividadId = actividad.Id;
-        UsuarioId = actividad.UsuarioId;
-        TipoAccion = actividad.TipoAccion;
-        Detalles = actividad.Detalles;
-        Fecha = actividad.Fecha;
+        ActividadId = actividadId;
+        UsuarioId = usuarioId;
+        TipoAccion = tipoAccion;
+        Detalles = detalles;
+        Fecha = fecha;
     }
 }
+
+

@@ -65,11 +65,26 @@ public class CambiarPasswordCommandHandler : IRequestHandler<CambiarPasswordComm
             routingKey: "usuario.password.cambiado"
         );
 
-        await _actividadRepository.RegistrarActividad(new Actividad(
+        var actividad = new Actividad(
             usuario.Id,
             "Cambio de Contraseña",
-            "El usuario actualizó su contraseña"
-        ));
+            "El usuario ha cambiado su contraseña."
+        );
+
+        await _actividadRepository.RegistrarActividad(actividad);
+
+        // Publicar evento de actividad registrada (Mongo)
+        _eventPublisher.Publish(
+            new ActividadRegistradaEvent(
+                actividad.Id,
+                actividad.UsuarioId,
+                actividad.TipoAccion,
+                actividad.Detalles,
+                actividad.Fecha
+            ),
+            exchangeName: "usuarios_exchange",
+            routingKey: "actividad.registrada"
+        );
 
         return true;
     }

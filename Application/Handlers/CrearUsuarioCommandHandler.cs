@@ -85,14 +85,28 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, G
             Console.WriteLine($"Error al enviar correo: {ex.Message}");
         }
 
-
+        var actividad = new Actividad(
+            usuario.Id,
+            "Usuario Registrado",
+            "El usuario se registró exitosamente en el sistema."
+        );
 
         // Registrar actividad
-        await _actividadRepository.RegistrarActividad(new Actividad(
-            usuario.Id,
-            "Registro de Usuario",
-            "El usuario se registró en el sistema"
-        ));
+        await _actividadRepository.RegistrarActividad(actividad);
+
+        // Publicar evento de actividad registrada (Mongo)
+        _eventPublisher.Publish(
+            new ActividadRegistradaEvent(
+                actividad.Id,
+                actividad.UsuarioId,
+                actividad.TipoAccion,
+                actividad.Detalles,
+                actividad.Fecha
+            ),
+            exchangeName: "usuarios_exchange",
+            routingKey: "actividad.registrada"
+        );
+
         return usuario.Id;
     }
 }
