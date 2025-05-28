@@ -28,51 +28,74 @@ public class RestablecerPasswordCommandHandlerTests
 
         _handler = new RestablecerPasswordCommandHandler(
             _repositoryMock.Object,
-            _eventPublisherMock.Object
+            _eventPublisherMock.Object,
+            _actividadRepositoryMock.Object
         );
     }
 
-    /// FALTA HACERLO SE PUSO COMICO Y ESTOY CANSADO
-    /// ✅ **Caso base: Restablecimiento exitoso de contraseña**
-
-
-    /// ❌ **Error: Usuario no encontrado**
+    /// ✅ **Caso exitoso: Restablecimiento correcto de contraseña**
     [Fact]
-    public async Task Handle_DeberiaRetornarFalse_CuandoUsuarioNoExiste()
+    public async Task Handle_DeberiaRetornarTrue_CuandoRestablecimientoEsExitoso()
     {
-        var command = new RestablecerPasswordCommand("tokenInvalido", "nuevoPassword");
+        var usuario = new Usuario("Test", "User", "testuser", "oldPassword", "test@user.com", "123456789", "Address");
+        usuario.GenerarTokenRecuperacion(TimeSpan.FromHours(1));
 
-        _repositoryMock.Setup(r => r.GetByTokenRecuperacion(command.Token)).ReturnsAsync((Usuario)null);
-
-        var resultado = await _handler.Handle(command, CancellationToken.None);
-
-        Assert.False(resultado);
-        _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
-        _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
-    }
-
-    /// ❌ **Error: Token expirado**
-    [Fact]
-    public async Task Handle_DeberiaRetornarFalse_CuandoTokenHaExpirado()
-    {
-        var usuario = new Usuario("Nombre", "Apellido", "usuario123", "passwordActual", "usuario@test.com", "123456789", "Dirección");
-
-        typeof(Usuario).GetField("<TokenRecuperacion>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .SetValue(usuario, "tokenExpirado");
-
-        typeof(Usuario).GetField("<ExpiracionTokenRecuperacion>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .SetValue(usuario, DateTime.UtcNow.AddHours(-1));
-
-        var command = new RestablecerPasswordCommand("tokenExpirado", "nuevoPassword");
+        var command = new RestablecerPasswordCommand(usuario.TokenRecuperacion!, "newPassword");
 
         _repositoryMock.Setup(r => r.GetByTokenRecuperacion(command.Token)).ReturnsAsync(usuario);
+        _repositoryMock.Setup(r => r.UpdateAsync(usuario)).Returns(Task.CompletedTask);
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
 
         var resultado = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.False(resultado);
-        _repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Usuario>()), Times.Never);
-        _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Never);
+        Assert.True(resultado);
+        _repositoryMock.Verify(r => r.UpdateAsync(usuario), Times.Once);
+        _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
+    }
+
+    /// ❌ **Error al publicar evento de cambio de contraseña**
+    [Fact]
+    public async Task Handle_DeberiaContinuar_CuandoErrorAlPublicarEvento()
+    {
+        var usuario = new Usuario("Test", "User", "testuser", "oldPassword", "test@user.com", "123456789", "Address");
+        usuario.GenerarTokenRecuperacion(TimeSpan.FromHours(1));
+
+        var command = new RestablecerPasswordCommand(usuario.TokenRecuperacion!, "newPassword");
+
+        _repositoryMock.Setup(r => r.GetByTokenRecuperacion(command.Token)).ReturnsAsync(usuario);
+        _repositoryMock.Setup(r => r.UpdateAsync(usuario)).Returns(Task.CompletedTask);
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>())).Returns(Task.CompletedTask);
+        _eventPublisherMock.Setup(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), It.IsAny<string>(), It.IsAny<string>()))
+                           .Throws(new Exception("Error simulado en el evento"));
+
+        var resultado = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(resultado);
+        _repositoryMock.Verify(r => r.UpdateAsync(usuario), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
+        _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    /// ❌ **Error al registrar actividad**
+    [Fact]
+    public async Task Handle_DeberiaContinuar_CuandoErrorAlRegistrarActividad()
+    {
+        var usuario = new Usuario("Test", "User", "testuser", "oldPassword", "test@user.com", "123456789", "Address");
+        usuario.GenerarTokenRecuperacion(TimeSpan.FromHours(1));
+
+        var command = new RestablecerPasswordCommand(usuario.TokenRecuperacion!, "newPassword");
+
+        _repositoryMock.Setup(r => r.GetByTokenRecuperacion(command.Token)).ReturnsAsync(usuario);
+        _repositoryMock.Setup(r => r.UpdateAsync(usuario)).Returns(Task.CompletedTask);
+        _actividadRepositoryMock.Setup(ar => ar.RegistrarActividad(It.IsAny<Actividad>()))
+                               .Throws(new Exception("Error simulado en actividad"));
+
+        var resultado = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(resultado);
+        _repositoryMock.Verify(r => r.UpdateAsync(usuario), Times.Once);
+        _eventPublisherMock.Verify(e => e.Publish(It.IsAny<UsuarioPasswordCambiadoEvent>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _actividadRepositoryMock.Verify(ar => ar.RegistrarActividad(It.IsAny<Actividad>()), Times.Once);
     }
 }

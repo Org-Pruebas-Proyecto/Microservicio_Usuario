@@ -16,6 +16,7 @@ public class GenerarTokenRecuperacionHandlerTests
     private readonly Mock<IUsuarioRepository> _repositoryMock;
     private readonly Mock<ISmtpEmailService> _smtpEmailServiceMock;
     private readonly Mock<IActividadRepository> _actividadRepositoryMock;
+    private readonly Mock<IEventPublisher> _eventPublisher;
     private readonly GenerarTokenRecuperacionHandler _handler;
 
     public GenerarTokenRecuperacionHandlerTests()
@@ -23,11 +24,13 @@ public class GenerarTokenRecuperacionHandlerTests
         _repositoryMock = new Mock<IUsuarioRepository>();
         _smtpEmailServiceMock = new Mock<ISmtpEmailService>();
         _actividadRepositoryMock = new Mock<IActividadRepository>();
+         _eventPublisher = new Mock<IEventPublisher>();
 
         _handler = new GenerarTokenRecuperacionHandler(
             _repositoryMock.Object,
             _smtpEmailServiceMock.Object,
-            _actividadRepositoryMock.Object
+            _actividadRepositoryMock.Object,
+            _eventPublisher.Object
         );
     }
 

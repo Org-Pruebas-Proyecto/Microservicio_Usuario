@@ -16,10 +16,11 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
 
 
     public RestablecerPasswordCommandHandler(
-        IUsuarioRepository repository, IEventPublisher eventPublisher)
+        IUsuarioRepository repository, IEventPublisher eventPublisher, IActividadRepository actividadRepository)
     {
         _repository = repository;
         _eventPublisher = eventPublisher;
+        _actividadRepository = actividadRepository;
     }
 
     public async Task<bool> Handle(RestablecerPasswordCommand request, CancellationToken cancellationToken)
@@ -56,7 +57,14 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
             "El usuario ha restablecido su contraseña exitosamente."
         );
 
-        await _actividadRepository.RegistrarActividad(actividad);
+        try
+        {
+            await _actividadRepository.RegistrarActividad(actividad);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al registrar actividad: {ex.Message}");
+        }
 
         // Publicar evento de actividad registrada (Mongo)
         _eventPublisher.Publish(
