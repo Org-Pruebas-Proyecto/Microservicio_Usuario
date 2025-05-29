@@ -35,7 +35,7 @@ public class SmtpEmailService : ISmtpEmailService
     {
         using var cliente = _smtpClientFactory.Create();
         var titulo = "Recuperación de contraseña";
-        var cuerpo = $"Hola {nombre}, Para recuperar tu contraseña, haz clic en el siguiente enlace: https://tuaplicacion.com/recuperar?token={token}";
+        var cuerpo = $"Hola {nombre}, Para recuperar tu contraseña, haz clic en el siguiente enlace: http://localhost:5173/recuperar?token={token}";
         var mensaje = CrearMensaje(((NetworkCredential)cliente.Credentials).UserName, email, titulo, cuerpo);
         await cliente.SendMailAsync(mensaje);
     }
