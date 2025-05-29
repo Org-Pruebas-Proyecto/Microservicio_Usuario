@@ -1,80 +1,60 @@
 ﻿using Xunit;
 using Moq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Application.Services;
 using Application.Interfaces;
+using System.Net.Mail;
+using System.Net;
+using System.Threading.Tasks;
 
-namespace Usuarios.Tests.Application.Tests.Factories;
+namespace Usuarios.Tests.Application.Tests.Services;
 
 public class SmtpEmailServiceTests
 {
-    private readonly Mock<IConfiguration> _configurationMock;
-    private readonly Mock<ISmtpEmailService> _smtpEmailServiceMock;
-    private readonly SmtpEmailService _emailService;
+    private readonly Mock<ISmtpClientFactory> _factoryMock;
+    private readonly Mock<ISmtpClient> _smtpClientMock;
+    private readonly SmtpEmailService _service;
 
     public SmtpEmailServiceTests()
     {
-        _configurationMock = new Mock<IConfiguration>();
-        _smtpEmailServiceMock = new Mock<ISmtpEmailService>();
-
-        var configUserMock = new Mock<IConfigurationSection>();
-        configUserMock.Setup(c => c.Value).Returns("user@test.com");
-        _configurationMock.Setup(c => c.GetSection("EmailSettings:Username")).Returns(configUserMock.Object);
-
-        _emailService = new SmtpEmailService(_configurationMock.Object);
+        _factoryMock = new Mock<ISmtpClientFactory>();
+        _smtpClientMock = new Mock<ISmtpClient>();
+        _smtpClientMock.SetupProperty(c => c.Credentials, new NetworkCredential("from@example.com", "password"));
+        _factoryMock.Setup(f => f.Create()).Returns(_smtpClientMock.Object);
+        _service = new SmtpEmailService(_factoryMock.Object);
     }
 
-
-    /// ✅ **Caso base: Envío exitoso de correo de confirmación**
     [Fact]
-    public async Task EnviarCorreoConfirmacion_DeberiaEnviarCorreo_SinErrores()
+    public async Task EnviarCorreoConfirmacion_DeberiaEnviarCorreo()
     {
-        _smtpEmailServiceMock.Setup(es => es.EnviarCorreoConfirmacion(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
+        await _service.EnviarCorreoConfirmacion("to@example.com", "Carlos", "ABC123");
 
-        var ex = await Record.ExceptionAsync(() => _smtpEmailServiceMock.Object.EnviarCorreoConfirmacion("usuario@test.com", "Usuario", "123456"));
-
-        Assert.Null(ex);
-        _smtpEmailServiceMock.Verify(es => es.EnviarCorreoConfirmacion(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _smtpClientMock.Verify(c => c.SendMailAsync(It.Is<MailMessage>(m =>
+            m.To[0].Address == "to@example.com" &&
+            m.Subject.Contains("Confirmación") &&
+            m.Body.Contains("ABC123")
+        )), Times.Once);
     }
 
-    /// ✅ **Caso base: Envío exitoso de notificación de cambio de contraseña**
     [Fact]
-    public async Task EnviarNotificacionCambioPassword_DeberiaEnviarCorreo_SinErrores()
+    public async Task EnviarNotificacionCambioPassword_DeberiaEnviarCorreo()
     {
-        _smtpEmailServiceMock.Setup(es => es.EnviarNotificacionCambioPassword(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
+        await _service.EnviarNotificacionCambioPassword("to@example.com", "Carlos");
 
-        var ex = await Record.ExceptionAsync(() => _smtpEmailServiceMock.Object.EnviarNotificacionCambioPassword("usuario@test.com", "Usuario"));
-
-        Assert.Null(ex);
-        _smtpEmailServiceMock.Verify(es => es.EnviarNotificacionCambioPassword(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _smtpClientMock.Verify(c => c.SendMailAsync(It.Is<MailMessage>(m =>
+            m.Subject.Contains("cambio de contraseña") &&
+            m.Body.Contains("contraseña ha sido cambiada")
+        )), Times.Once);
     }
 
-    /// ✅ **Caso base: Envío exitoso de enlace de recuperación**
     [Fact]
-    public async Task EnviarEnlaceRecuperacion_DeberiaEnviarCorreo_SinErrores()
+    public async Task EnviarEnlaceRecuperacion_DeberiaEnviarCorreo()
     {
-        _smtpEmailServiceMock.Setup(es => es.EnviarEnlaceRecuperacion(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
+        var token = "token123";
+        await _service.EnviarEnlaceRecuperacion("to@example.com", "Carlos", token);
 
-        var ex = await Record.ExceptionAsync(() => _smtpEmailServiceMock.Object.EnviarEnlaceRecuperacion("usuario@test.com", "Usuario", "token_recuperacion"));
-
-        Assert.Null(ex);
-        _smtpEmailServiceMock.Verify(es => es.EnviarEnlaceRecuperacion(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _smtpClientMock.Verify(c => c.SendMailAsync(It.Is<MailMessage>(m =>
+            m.Subject.Contains("Recuperación") &&
+            m.Body.Contains(token)
+        )), Times.Once);
     }
-
-    /// ❌ **Error en envío de correo**
-    [Fact]
-    public async Task EnviarCorreoConfirmacion_DeberiaLanzarExcepcion_SiEnvioFalla()
-    {
-        _smtpEmailServiceMock.Setup(es => es.EnviarCorreoConfirmacion(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ThrowsAsync(new Exception("Error al enviar correo"));
-
-        var ex = await Assert.ThrowsAsync<Exception>(() => _smtpEmailServiceMock.Object.EnviarCorreoConfirmacion("usuario@test.com", "Usuario", "123456"));
-
-        Assert.Equal("Error al enviar correo", ex.Message);
-    }
-
 }
