@@ -17,6 +17,8 @@ namespace Application
             // Register IUsuarioFactory as a scoped service
             services.AddScoped<IUsuarioFactory, UsuarioFactory>();
             services.AddScoped<ISmtpEmailService, SmtpEmailService>();
+            services.AddScoped<ISmtpClientFactory, SmtpClientFactory>();
+
         }
     }
 }

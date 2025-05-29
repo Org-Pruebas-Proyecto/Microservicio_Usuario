@@ -114,5 +114,16 @@ namespace Web.Controllers
 
             return Ok(actividades);
         }
+
+
+
+
+        [HttpGet("actividades")]
+        public async Task<IActionResult> ObtenerTodasLasActividades()
+        {
+            var actividades = await _mediator.Send(new ObtenerTodasLasActividadesQuery());
+            return Ok(actividades);
+        }
+
     }
 }

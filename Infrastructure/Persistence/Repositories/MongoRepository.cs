@@ -21,6 +21,8 @@ public class MongoRepository<TDocument> : IMongoRepository<TDocument> where TDoc
 
     public async Task<IEnumerable<TDocument>> FindAsync(FilterDefinition<TDocument> filter)
     {
-        return await _collection.Find(filter).ToListAsync();
+        var result = await _collection.Find(filter).ToListAsync();
+        return result;
     }
+
 }

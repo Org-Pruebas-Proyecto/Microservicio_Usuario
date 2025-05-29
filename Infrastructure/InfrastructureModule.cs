@@ -18,6 +18,8 @@ namespace Infrastructure
     {
         public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+
             services.AddSingleton<MongoInitializer>();
             services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
             {
@@ -67,6 +69,7 @@ namespace Infrastructure
                     "usuarios_db",
                     "actividades"
                 ));
+
         }
     }
 }
