@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using Infrastructure.Persistence;
 
+namespace Usuarios.Tests.Infrastructure.Tests.Persistance.Repositories;
 public class UsuarioRepositoryTests
 {
     private AppDbContext GetInMemoryDbContext()

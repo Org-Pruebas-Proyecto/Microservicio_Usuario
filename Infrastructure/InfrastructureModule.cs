@@ -2,8 +2,11 @@ using Application.Interfaces;
 using Domain.Entities;
 using Domain.ValueObjects;
 using Infrastructure.DataBase;
+using Infrastructure.EventBus.Connection;
 using Infrastructure.EventBus.Consumers;
-using Infrastructure.EventBus.Events;
+using Infrastructure.EventBus.Publisher;
+using Infrastructure.EventBus.Interfaces;
+using Infrastructure.EventBus.Publisher;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -21,16 +24,22 @@ namespace Infrastructure
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
             services.AddSingleton<MongoInitializer>();
-            services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
-            {
-                var mongoInitializer = sp.GetRequiredService<MongoInitializer>();
-                mongoInitializer.Initialize();
-                return new RabbitMQEventPublisher(
+
+            // Configuracion RabbitMQ Consumer
+            services.AddSingleton<IRabbitMQConnectionFactory>(sp =>
+                new RabbitMQConnectionFactory(
                     configuration["RabbitMQ:Host"],
                     configuration["RabbitMQ:Username"],
                     configuration["RabbitMQ:Password"]
-                );
-            });
+                ));
+
+            services.AddSingleton<IRabbitMQMessageProcessor, RabbitMQMessageProcessor>();
+
+            services.AddScoped<IUsuarioEventHandler, UsuarioEventHandler>();
+            services.AddHostedService<RabbitMQConsumerService>();
+
+            services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>();
+
             // Obtener la cadena de conexión correctamente
             var postgresConnection = configuration.GetConnectionString("Postgres");
 
@@ -45,14 +54,6 @@ namespace Infrastructure
             services.AddSingleton<IMongoClient>(sp =>
                 new MongoClient(configuration.GetConnectionString("MongoDB")));
 
-            // Configuracion RabbitMQ Consumer
-            services.AddSingleton<IHostedService>(sp =>
-                (IHostedService)new RabbitMQConsumerService( 
-                    configuration["RabbitMQ:Host"],
-                    configuration["RabbitMQ:Username"],
-                    configuration["RabbitMQ:Password"],
-                    sp.GetRequiredService<IServiceProvider>()
-                ));
 
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             services.AddSingleton<IMongoRepository<UsuarioMongo>, MongoRepository<UsuarioMongo>>(
