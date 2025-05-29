@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+namespace Usuarios.Tests.Infrastructure.Tests.Persistance.Repositories;
 public class MongoRepositoryTests
 {
     [Fact]

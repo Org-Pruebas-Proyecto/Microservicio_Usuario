@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using Xunit;
 
+namespace Usuarios.Tests.Infrastructure.Tests.Persistance.Repositories;
 public class ActividadRepositoryTests
 {
     [Fact]
