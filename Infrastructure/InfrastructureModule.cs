@@ -61,10 +61,10 @@ namespace Infrastructure
                 )
             );
             services.AddScoped<IActividadRepository, ActividadRepository>();
-            services.AddScoped<IMongoRepository<ActividadMongo>>(sp =>
+            services.AddSingleton<IMongoRepository<ActividadMongo>>(sp =>
                 new MongoRepository<ActividadMongo>(
                     sp.GetRequiredService<IMongoClient>(),
-                    "historial_db",
+                    "usuarios_db",
                     "actividades"
                 ));
         }
