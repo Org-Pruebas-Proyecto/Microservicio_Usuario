@@ -10,4 +10,6 @@ public interface IUsuarioEventHandler
     Task HandleUsuarioPasswordCambiadoAsync(UsuarioPasswordCambiadoEvent evento);
     Task HandlePerfilActualizadoAsync(PerfilActualizadoEvent evento);
     Task HandleActividadRegistradaAsync(ActividadRegistradaEvent evento);
+
+    Task HandleRolAsignadoAsync(Rol_Asignado_Event evento);
 }

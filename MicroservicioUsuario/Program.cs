@@ -15,9 +15,14 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configurar módulos
-builder.Services.AddAuthorization();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("RequireAdministrador", policy =>
+        policy.RequireRole("Administrador"));
+
+
 
 var app = builder.Build();
 

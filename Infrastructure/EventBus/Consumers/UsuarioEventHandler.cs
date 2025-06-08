@@ -82,4 +82,11 @@ public class UsuarioEventHandler : IUsuarioEventHandler
         };
         await Actividades.InsertOneAsync(actividad);
     }
+    public async Task HandleRolAsignadoAsync(Rol_Asignado_Event evento)
+    {
+        var filter = Builders<UsuarioMongo>.Filter.Eq(u => u.Id, evento.UsuarioId);
+        var update = Builders<UsuarioMongo>.Update.Set(u => u.Rol_id, evento.RolId);
+        await Usuarios.UpdateOneAsync(filter, update);
+    }
+
 }

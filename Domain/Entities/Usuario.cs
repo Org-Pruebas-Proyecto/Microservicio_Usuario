@@ -15,6 +15,7 @@
         public DateTime FechaExpiracionCodigo { get; private set; }
         public string? TokenRecuperacion { get; private set; }
         public DateTime? ExpiracionTokenRecuperacion { get; private set; }
+        public Guid? Rol_id { get; set; }
 
 
         // Constructor
@@ -30,6 +31,7 @@
             Telefono = telefono;
             Direccion = direccion;
             Verificado = false;
+
             GenerarCodigo();
         }
 
@@ -76,6 +78,12 @@
             LimpiarTokenRecuperacion();
 
         }
+
+        public void AsignarRol(Guid rolId)
+        {
+            Rol_id = rolId;
+        }
+
     }
 }
 

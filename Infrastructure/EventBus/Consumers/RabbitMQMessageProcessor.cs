@@ -61,6 +61,11 @@ public class RabbitMQMessageProcessor : IRabbitMQMessageProcessor
                     await handler.HandleActividadRegistradaAsync(actividadEvent);
                     break;
 
+                case "RolAsignadoEvent":
+                    var rolAsignadoEvent = JsonSerializer.Deserialize<Rol_Asignado_Event>(message);
+                    await handler.HandleRolAsignadoAsync(rolAsignadoEvent);
+                    break;
+
                 default:
                     throw new InvalidOperationException($"Tipo de evento desconocido: {eventType}");
             }

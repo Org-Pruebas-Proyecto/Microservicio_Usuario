@@ -2,6 +2,7 @@
 using Application.DTOs;
 using Application.Queries;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -124,6 +125,15 @@ namespace Web.Controllers
             var actividades = await _mediator.Send(new ObtenerTodasLasActividadesQuery());
             return Ok(actividades);
         }
+        [Authorize(Policy = "RequireAdministrador")]
+        [HttpPatch("roles/{usuarioId}")]
+        public async Task<IActionResult> AsignarRol(Guid usuarioId, [FromBody] Asignar_Rol_Dto dto)
+        {
+            var command = new Asignar_Rol_Command(usuarioId, dto.Rolid);
+            var result = await _mediator.Send(command);
+            return Ok("Rol asignado");
+        }
+
 
     }
 }

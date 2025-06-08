@@ -70,7 +70,26 @@ namespace Infrastructure
                     "usuarios_db",
                     "actividades"
                 ));
-
+            services.AddScoped<IRol_Repositorio, Rol_Repositorio>();
+            services.AddSingleton<IMongoRepository<Rol_Mongo>>(sp =>
+                new MongoRepository<Rol_Mongo>(
+                    sp.GetRequiredService<IMongoClient>(),
+                    "usuarios_db",
+                    "roles"
+                ));
+            services.AddScoped<IPermiso_Repositorio, Permiso_Repositorio>();
+            services.AddSingleton<IMongoRepository<Permiso_Mongo>> (sp =>
+                new MongoRepository<Permiso_Mongo>(
+                    sp.GetRequiredService<IMongoClient>(),
+                    "usuarios_db",
+                    "permisos"
+                ));
+            services.AddSingleton<IMongoRepository<Rol_Permiso_Mongo>>(sp =>
+                new MongoRepository<Rol_Permiso_Mongo>(
+                    sp.GetRequiredService<IMongoClient>(),
+                    "usuarios_db",
+                    "roles_permisos"
+                    ));
         }
     }
 }

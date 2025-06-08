@@ -17,5 +17,6 @@ public class UsuarioMongo
     public string Telefono { get; set; }
     public string Direccion { get; set; }
     public bool Verificado { get; set; }
-
+    [BsonRepresentation(BsonType.String)]
+    public Guid? Rol_id { get; set; }
 }
