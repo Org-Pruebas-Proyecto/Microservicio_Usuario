@@ -14,17 +14,20 @@ public class CambiarPasswordCommandHandler : IRequestHandler<CambiarPasswordComm
     private readonly ISmtpEmailService _smtpEmailService;
     private readonly IEventPublisher _eventPublisher;
     private readonly IActividadRepository _actividadRepository;
+    private readonly IKeycloak_Servicio _keycloak_Servicio;
 
     public CambiarPasswordCommandHandler(
         IUsuarioRepository repository,
         ISmtpEmailService smtpEmailService,
         IEventPublisher eventPublisher,
-        IActividadRepository actividadRepository)
+        IActividadRepository actividadRepository,
+        IKeycloak_Servicio keycloak_Servicio)
     {
         _repository = repository;
         _smtpEmailService = smtpEmailService;
         _eventPublisher = eventPublisher;
         _actividadRepository = actividadRepository;
+        _keycloak_Servicio = keycloak_Servicio;
     }
 
     public async Task<bool> Handle(CambiarPasswordCommand request, CancellationToken cancellationToken)
@@ -42,6 +45,11 @@ public class CambiarPasswordCommandHandler : IRequestHandler<CambiarPasswordComm
 
         // Actualizar password
         usuario.Password = request.NuevoPassword;
+
+
+        // Registrar cambio en Keycloak
+        await _keycloak_Servicio.Actualizar_Usuario_Keycloak(usuario);
+
         await _repository.UpdateAsync(usuario);
 
         // Enviar notificación

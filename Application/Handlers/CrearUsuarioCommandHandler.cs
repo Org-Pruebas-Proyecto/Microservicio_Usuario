@@ -3,6 +3,7 @@ using MediatR;
 using Application.Interfaces;
 using Domain.Events;
 using Domain.ValueObjects;
+using Application.Queries;
 
 
 namespace Application.Handlers;
@@ -14,19 +15,25 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, G
     private readonly IEventPublisher _eventPublisher;
     private readonly ISmtpEmailService _smtpEmailService;
     private readonly IActividadRepository _actividadRepository;
+    private readonly IKeycloak_Servicio _keycloak_Servicio; 
+    private readonly IRol_Repositorio _rol_Repositorio;
 
     public CrearUsuarioCommandHandler(
         IUsuarioRepository repository,
         IUsuarioFactory factory,
         IEventPublisher eventPublisher,
         ISmtpEmailService smtpEmailService,
-        IActividadRepository actividadRepository)
+        IActividadRepository actividadRepository,
+        IKeycloak_Servicio keycloak_Servicio,
+        IRol_Repositorio rol_Repositorio)
     {
         _repository = repository;
         _factory = factory;
         _eventPublisher = eventPublisher;
         _smtpEmailService = smtpEmailService;
         _actividadRepository = actividadRepository;
+        _keycloak_Servicio = keycloak_Servicio;
+        _rol_Repositorio = rol_Repositorio;
     }
 
     public async Task<Guid> Handle(CrearUsuarioCommand request, CancellationToken cancellationToken)
@@ -39,13 +46,23 @@ public class CrearUsuarioCommandHandler : IRequestHandler<CrearUsuarioCommand, G
             request.Password,
             request.Correo,
             request.Telefono,
-            request.Direccion
+            request.Direccion,
+            request.rol_id
         );
 
         if (usuario == null)
         {
             throw new InvalidOperationException("Error al crear usuario");
         }
+
+
+        //Crear usuario en Keycloak
+        var keycloak_Id = await _keycloak_Servicio.Crear_Usuario_Keycloak(usuario);
+        usuario.Asignar_Keycloak_Id(keycloak_Id);
+
+        // Asignar rol al usuario en Keycloak
+        var rol = await _rol_Repositorio.GetByIdAsync(usuario.Rol_id);
+        await _keycloak_Servicio.Asignar_Rol_Usuario_Keycloak(keycloak_Id, rol.Nombre);
 
 
         await _repository.AddAsync(usuario);

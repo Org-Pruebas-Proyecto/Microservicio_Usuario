@@ -20,6 +20,13 @@ services:
       # Configuración básica de Keycloak
       - KEYCLOAK_ADMIN=admin # Usuario administrador
       - KEYCLOAK_ADMIN_PASSWORD=admin # Contraseña del administrador
+      # Configuración de la base de datos 
+      - DB_VENDOR=POSTGRES
+      - DB_ADDR=ep-divine-sun-a4cxals4-pooler.us-east-1.aws.neon.tech
+      - DB_DATABASE=Test_MS-User
+      - DB_USER=neondb_owner
+      - DB_PASSWORD=npg_etunzwU4iy2p
+      - DB_SCHEMA=public
     command: ["start-dev"] # Ejecuta en modo de desarrollo
     volumes:
       - keycloak_data:/opt/keycloak/data # Volumen persistente

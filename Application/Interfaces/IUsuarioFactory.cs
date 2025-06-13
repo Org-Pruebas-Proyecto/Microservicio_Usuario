@@ -4,6 +4,6 @@ namespace Application.Interfaces;
 
 public interface IUsuarioFactory
 {
-    Usuario CrearUsuario(string nombre, string apellido, string username, string password, string correo, string telefono, string direccion);
+    Usuario CrearUsuario(string nombre, string apellido, string username, string password, string correo, string telefono, string direccion,Guid rol_id);
 
 }

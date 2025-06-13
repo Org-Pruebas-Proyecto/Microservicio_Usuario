@@ -9,6 +9,7 @@ public record CrearUsuarioCommand(
             string Password,
             string Correo,
             string Telefono,
-            string Direccion
+            string Direccion,
+            Guid rol_id
         ) : IRequest<Guid>;
 }

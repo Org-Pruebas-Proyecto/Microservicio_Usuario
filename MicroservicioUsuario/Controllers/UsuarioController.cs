@@ -30,7 +30,8 @@ namespace Web.Controllers
                 dto.Password,
                 dto.Correo,
                 dto.Telefono,
-                dto.Direccion
+                dto.Direccion,
+                dto.Rol_id
             );
             var usuarioId = await _mediator.Send(command);
             return CreatedAtAction(nameof(CrearUsuario), new { id = usuarioId });

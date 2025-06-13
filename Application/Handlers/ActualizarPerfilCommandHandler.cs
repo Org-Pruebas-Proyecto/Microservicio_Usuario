@@ -11,15 +11,18 @@ public class ActualizarPerfilCommandHandler : IRequestHandler<ActualizarPerfilCo
     private readonly IUsuarioRepository _repository;
     private readonly IEventPublisher _eventPublisher;
     private readonly IActividadRepository _actividadRepository;
+    private readonly IKeycloak_Servicio _keycloak_Servicio;
 
     public ActualizarPerfilCommandHandler(
         IUsuarioRepository repository,
         IEventPublisher eventPublisher,
-        IActividadRepository actividadRepository)
+        IActividadRepository actividadRepository,
+        IKeycloak_Servicio keycloak_Servicio)
     {
         _repository = repository;
         _eventPublisher = eventPublisher;
         _actividadRepository = actividadRepository;
+        _keycloak_Servicio = keycloak_Servicio;
     }
 
     public async Task<bool> Handle(ActualizarPerfilCommand request, CancellationToken cancellationToken)
@@ -38,6 +41,9 @@ public class ActualizarPerfilCommandHandler : IRequestHandler<ActualizarPerfilCo
             request.Telefono,
             request.Direccion
         );
+
+        // Actualizar usuario en Keycloak
+        await _keycloak_Servicio.Actualizar_Usuario_Keycloak(usuario);
 
         await _repository.UpdateAsync(usuario);
 

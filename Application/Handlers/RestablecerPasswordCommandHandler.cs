@@ -12,15 +12,18 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
     private readonly IUsuarioRepository _repository;
     private readonly IEventPublisher _eventPublisher;
     private readonly IActividadRepository _actividadRepository;
+    private readonly IKeycloak_Servicio _keycloak_Servicio;
 
 
 
     public RestablecerPasswordCommandHandler(
-        IUsuarioRepository repository, IEventPublisher eventPublisher, IActividadRepository actividadRepository)
+        IUsuarioRepository repository, IEventPublisher eventPublisher,
+        IActividadRepository actividadRepository, IKeycloak_Servicio keycloak_Servicio)
     {
         _repository = repository;
         _eventPublisher = eventPublisher;
         _actividadRepository = actividadRepository;
+        _keycloak_Servicio = keycloak_Servicio;
     }
 
     public async Task<bool> Handle(RestablecerPasswordCommand request, CancellationToken cancellationToken)
@@ -37,6 +40,8 @@ public class RestablecerPasswordCommandHandler : IRequestHandler<RestablecerPass
 
         await _repository.UpdateAsync(usuario);
 
+        // Actualizar usuario en Keycloak
+        await _keycloak_Servicio.Actualizar_Usuario_Keycloak(usuario);
 
         try
         {

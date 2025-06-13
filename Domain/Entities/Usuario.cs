@@ -15,12 +15,13 @@
         public DateTime FechaExpiracionCodigo { get; private set; }
         public string? TokenRecuperacion { get; private set; }
         public DateTime? ExpiracionTokenRecuperacion { get; private set; }
-        public Guid? Rol_id { get; set; }
+        public Guid Rol_id { get; set; }
+        public string? KeycloakId { get; private set; }
 
 
         // Constructor
         public Usuario(string nombre, string apellido, string username, string password, string correo, string telefono,
-            string direccion)
+            string direccion,Guid rol_id)
         {
             Id = Guid.NewGuid();
             Nombre = nombre;
@@ -31,6 +32,8 @@
             Telefono = telefono;
             Direccion = direccion;
             Verificado = false;
+            Rol_id = rol_id;
+
 
             GenerarCodigo();
         }
@@ -79,10 +82,9 @@
 
         }
 
-        public void AsignarRol(Guid rolId)
-        {
-            Rol_id = rolId;
-        }
+        public void AsignarRol(Guid rolId) => Rol_id = rolId; 
+
+        public void Asignar_Keycloak_Id(string id) => KeycloakId = id;
 
     }
 }

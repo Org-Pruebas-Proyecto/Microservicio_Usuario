@@ -7,5 +7,6 @@ public record RegistroUsuarioDto(
     string Password,
     string Correo,
     string Telefono,
-    string Direccion
+    string Direccion,
+    Guid Rol_id
     );
