@@ -83,7 +83,7 @@ namespace Web.Controllers
             return usuario != null ? Ok(usuario) : NotFound();
         }
 
-        [HttpGet("{correo}")]
+        [HttpGet("correo/{correo}")]
         public async Task<IActionResult> Get_Usuario_Correo([FromQuery] string correo)
         {
             var usuario = await _mediator.Send(new Get_Usuario_Correo_Query(correo));

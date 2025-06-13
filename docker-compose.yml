@@ -20,6 +20,8 @@ services:
       # Configuración básica de Keycloak
       - KEYCLOAK_ADMIN=admin # Usuario administrador
       - KEYCLOAK_ADMIN_PASSWORD=admin # Contraseña del administrador
+      - KC_HTTP_ENABLED=true
+      - KC_PROXY=edge # Para desarrollo
       # Configuración de la base de datos 
       - DB_VENDOR=POSTGRES
       - DB_ADDR=ep-divine-sun-a4cxals4-pooler.us-east-1.aws.neon.tech

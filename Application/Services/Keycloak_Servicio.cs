@@ -18,18 +18,19 @@ public class Keycloak_Servicio: IKeycloak_Servicio
     }
     public async Task<string> Crear_Usuario_Keycloak(Usuario usuario)
     {
-        var client = _httpClientFactory.CreateClient();
-        var token = await ObtenerTokenAdmin();
-
-        var keycloakUser = new
+        try
         {
-            username = usuario.Username,
-            email = usuario.Correo,
-            firstName = usuario.Nombre,
-            lastName = usuario.Apellido,
-            enabled = true,
-            credentials = new[]
+            var client = _httpClientFactory.CreateClient();
+            var token = await ObtenerTokenAdmin();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var keycloakUser = new
             {
+                username = usuario.Username,
+                email = usuario.Correo,
+                firstName = usuario.Nombre,
+                lastName = usuario.Apellido,
+                enabled = true,
+                credentials = new[] {
                 new
                 {
                     type = "password",
@@ -37,21 +38,30 @@ public class Keycloak_Servicio: IKeycloak_Servicio
                     temporary = false
                 }
             }
-        };
+            };
+            var realm = _configuration["Keycloak:realm"];
+            var url = $"{_configuration["Keycloak:auth-server-url"]}admin/realms/{realm}/users";
 
-        var realm = _configuration["Keycloak:realm"];
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var response = await client.PostAsJsonAsync(url, keycloakUser);
 
-        var response = await client.PostAsJsonAsync(
-            $"{_configuration["Keycloak:auth-server-url"]}admin/realms/{realm}/users",
-            keycloakUser);
+            // Mejor manejo de errores
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new ApplicationException(
+                    $"Error creando usuario en Keycloak. Status: {response.StatusCode}. Error: {errorContent}");
+            }
 
-        if (!response.IsSuccessStatusCode)
-            throw new ApplicationException("Error creando usuario en Keycloak");
+            var location = response.Headers.Location?.ToString();
+            if (string.IsNullOrEmpty(location))
+                throw new ApplicationException("Keycloak no devolvió ubicación del usuario");
 
-        // Obtener ID del usuario recién creado
-        var location = response.Headers.Location.ToString();
-        return location.Split('/').Last();
+            return location.Split('/').Last();
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Error en Crear_Usuario_Keycloak", ex);
+        }
     }
 
     public async Task Asignar_Rol_Usuario_Keycloak(string keycloakId, string rol)
@@ -103,22 +113,32 @@ public class Keycloak_Servicio: IKeycloak_Servicio
 
     private async Task<string> ObtenerTokenAdmin()
     {
-        var client = _httpClientFactory.CreateClient();
-        var realm = _configuration["Keycloak:realm"];
-
-        var parameters = new Dictionary<string, string>
+        try
         {
-            {"client_id", "admin-cli"},
-            {"grant_type", "client_credentials"},
-            {"client_secret", _configuration["Keycloak:AdminClientSecret"]}
-        };
+            var client = _httpClientFactory.CreateClient();
+            var parameters = new Dictionary<string, string>
+            {
+                {"client_id", "admin-cli"},
+                {"grant_type", "client_credentials"},
+                {"client_secret", _configuration["Keycloak:AdminClientSecret"]}
+            };
 
-        var response = await client.PostAsync(
-            $"{_configuration["Keycloak:auth-server-url"]}realms/master/protocol/openid-connect/token",
-            new FormUrlEncodedContent(parameters));
+            var tokenUrl = $"{_configuration["Keycloak:auth-server-url"]}realms/master/protocol/openid-connect/token";
+            var response = await client.PostAsync(tokenUrl, new FormUrlEncodedContent(parameters));
 
-        var tokenResponse = await response.Content.ReadFromJsonAsync<KeycloakTokenResponse>();
-        return tokenResponse.access_token;
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new ApplicationException($"Error obteniendo token admin: {response.StatusCode} - {error}");
+            }
+
+            var tokenResponse = await response.Content.ReadFromJsonAsync<KeycloakTokenResponse>();
+            return tokenResponse?.access_token ?? throw new ApplicationException("Token nulo");
+        }
+        catch (Exception ex)
+        {
+            throw new ApplicationException("Error en ObtenerTokenAdmin", ex);
+        }
     }
 
     private record KeycloakTokenResponse(string access_token);
